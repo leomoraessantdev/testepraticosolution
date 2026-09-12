@@ -3,9 +3,12 @@
 Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
-> **Status:** backend com fundacao, autenticacao e autorizacao concluidos e
-> verificados. CRUD completo, integracao ViaCEP e frontend em andamento.
-> O checklist de requisitos esta em [PLAN.md](PLAN.md).
+> **Status:** backend e frontend implementados e verificados contra o
+> enunciado. 88 testes automatizados no backend (`mvn verify`).
+>
+> O checklist item por item, com citacao literal do documento, esta em
+> [PLAN.md](PLAN.md) — inclusive o unico requisito ainda pendente: publicar o
+> repositorio no GitHub.
 
 ---
 
@@ -18,7 +21,20 @@ cp .env.example .env      # o .env nao vai para o git
 docker compose up --build
 ```
 
-A API sobe em `http://localhost:8080`. O Postgres sobe em `localhost:5432`.
+Sobem tres servicos:
+
+| Servico | URL | Container |
+|---|---|---|
+| Frontend | http://localhost:5173 | `teste-web` (nginx) |
+| API | http://localhost:8080 | `teste-api` |
+| Postgres | localhost:5432 | `teste-db` |
+
+Abra **http://localhost:5173** e entre com uma das credenciais abaixo.
+
+A porta 5173 do frontend nao e arbitraria: e a origem que o backend libera no
+CORS (`CORS_ORIGENS`). O `web` so sobe depois que o healthcheck da API passa,
+que por sua vez espera o healthcheck do Postgres — entao nao ha corrida entre o
+Flyway e o banco.
 
 O primeiro boot leva alguns minutos (build Maven dentro do container). A API so
 inicia depois que o healthcheck do Postgres passa, entao nao ha corrida entre o
@@ -69,7 +85,7 @@ docker run --rm -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn 
 ```
 .
 ├── backend/           API Java 21 + Spring Boot
-├── frontend/          React + Vite + TypeScript (etapa 3)
+├── frontend/          React + Vite + TypeScript (nginx no Docker)
 ├── docker-compose.yml Postgres + API
 ├── .env.example       template de variaveis
 ├── PLAN.md            checklist de requisitos + ambiguidades
@@ -310,8 +326,11 @@ valer juntos.
 
 ## Testes
 
-67 testes: 43 unitarios (`mvn test`) e 24 de integracao contra um Postgres
-de verdade (`mvn verify`). Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
+88 testes: 43 unitarios e 45 de integracao contra um Postgres de verdade.
+
+**Rode `mvn verify`, nao `mvn test`.** O Surefire roda apenas os `*Test`; os
+`*IT` — onde vivem as regras de negocio — sao do Failsafe, na fase `verify`.
+`mvn test` passa sem exercitar nenhuma regra de endereco. Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
 adulterado e expirado), a regra de isolamento entre usuarios, e a conferencia
 dos hashes do seed contra as senhas documentadas.
 

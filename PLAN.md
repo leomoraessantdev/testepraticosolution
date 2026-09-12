@@ -1,324 +1,323 @@
 # PLAN.md — Checklist de Requisitos do Teste Técnico
 
-> ## STATUS: ESQUELETO — documento do teste ainda NÃO foi fornecido
+> ## STATUS: auditado contra o documento real
 >
-> O texto do teste nunca foi colado no chat (o bloco `<requisitos_do_teste>`
-> segue com o placeholder). Portanto:
+> O enunciado foi fornecido e cada item abaixo traz **citação literal** no campo
+> `Fonte:`. As marcas `(INFERIDO)` foram removidas, junto com os itens que eu
+> havia deduzido e que o documento **não** pede.
 >
-> - Todos os itens abaixo estão marcados **(INFERIDO)** — foram deduzidos dos
->   agrupamentos que você citou (Usuários, Autenticação e Acesso, Endereços,
->   ViaCEP, Frontend, Backend, Banco, Entrega, Diferenciais) e do formato
->   típico desse teste.
-> - **Nenhum item tem citação real.** O campo `Fonte:` está vazio de propósito.
->   Não inventei trechos — um checklist de auditoria com citações fabricadas
->   te daria falsa confiança de cobertura.
->
-> Assim que o documento chegar eu faço uma passada única:
->   1. Preencho cada `Fonte:` com o trecho literal do documento.
->   2. Removo itens que não existem no teste.
->   3. Adiciono os que faltarem.
->   4. Removo todas as marcas `(INFERIDO)`.
->
-> Só depois disso o arquivo vale como instrumento de auditoria.
+> **Itens que eu havia inventado e foram removidos:** editar usuário, excluir
+> usuário, paginação na listagem de usuários, Swagger/OpenAPI, e-mail como campo
+> de requisito, soft delete, limite de endereços. Nada disso aparece no
+> enunciado.
 
-**Legenda:** `[ ]` pendente · `[x]` implementado · `(INFERIDO)` não confirmado no documento
+**Legenda:** `[x]` implementado e verificado · `[~]` parcial · `[ ]` ausente
 
 ---
 
-## 1. Usuários
+## 1. Cadastro de usuários
 
-- [ ] (INFERIDO) Cadastrar usuário — `Fonte:`
-- [ ] (INFERIDO) Listar usuários — `Fonte:`
-- [ ] (INFERIDO) Buscar usuário por ID — `Fonte:`
-- [ ] (INFERIDO) Editar usuário — `Fonte:`
-- [ ] (INFERIDO) Excluir usuário — `Fonte:`
-- [ ] (INFERIDO) Campos do usuário: nome, e-mail, senha — `Fonte:`
-- [ ] (INFERIDO) E-mail único no sistema — `Fonte:`
-- [ ] (INFERIDO) Validação de campos obrigatórios e formato de e-mail — `Fonte:`
-- [x] (INFERIDO) Senha nunca retornada em nenhuma resposta da API — `Fonte:`
-- [ ] (INFERIDO) Paginação na listagem — `Fonte:`
+- [x] Campos nome, CPF, data de nascimento, senha
+      `Fonte:` *"O sistema deve permitir cadastrar usuários contendo: • Nome • CPF • Data Nascimento • Senha (para autenticação)"*
+      → `Usuario.java`, `CriarUsuarioRequest.java`, `V1__create_usuarios.sql`, `V4__add_data_nascimento.sql`
+- [x] CPF com formato válido
+      `Fonte:` *"O CPF deve possuir formato válido."*
+      → `@Cpf` + `CpfValidator.java` (dígito verificador, não só tamanho); cliente em `validacao.ts:39`
+- [x] Não pode haver dois usuários com o mesmo CPF
+      `Fonte:` *"Não pode haver dois usuários com o mesmo CPF."*
+      → `UsuarioService.java:56` + índice único `uk_usuarios_cpf` (`V1:21`); testes em `UsuarioServiceIT`
 
-## 2. Autenticação e Acesso
+## 2. Administrador — as 6 capacidades
 
-- [x] Login com **CPF** + senha *(confirmado por voce na etapa 2.2)* — `Fonte:`
-- [x] (INFERIDO) Senha persistida com hash (BCrypt), nunca em texto puro — `Fonte:`
-- [ ] (INFERIDO) Emissão de token JWT no login — `Fonte:`
-- [ ] (INFERIDO) Endpoints protegidos exigem token válido — `Fonte:`
-- [x] (INFERIDO) Perfis/roles distintos (ex.: ADMIN x USER) — `Fonte:`
-- [ ] (INFERIDO) Usuário comum só enxerga/edita os próprios dados e endereços — `Fonte:`
-- [ ] (INFERIDO) Distinção correta entre 401 (não autenticado) e 403 (sem permissão) — `Fonte:`
-- [ ] (INFERIDO) Tela de login no frontend — `Fonte:`
-- [ ] (INFERIDO) Rotas protegidas no frontend + redirect para login — `Fonte:`
-- [ ] (INFERIDO) Logout / expiração de token tratada no frontend — `Fonte:`
+`Fonte:` *"Administrador • Pode visualizar todos os usuários cadastrados • Pode visualizar todos os endereços cadastrados • Pode cadastrar usuários • Pode cadastrar endereços • Pode editar endereços • Pode excluir endereços"*
 
-## 3. Endereços
+- [x] Visualizar todos os usuários → `GET /api/usuarios` (`UsuarioController.java:44`, ADMIN em `SecurityConfig.java:78`) · tela `UsuariosPage.tsx`
+- [x] Visualizar todos os endereços → `GET /api/enderecos` (`EnderecoAdminController.java:34`, ADMIN em `SecurityConfig.java:81`) · tela `EnderecosGlobaisPage.tsx`
+- [x] Cadastrar usuários → `POST /api/usuarios` (`UsuarioController.java:36`) · tela `CadastroPage.tsx`
+- [x] Cadastrar endereços → `POST /api/usuarios/{id}/enderecos` (`EnderecoController.java:55`) · `EnderecoFormDialog.tsx`
+- [x] Editar endereços → `PUT .../{enderecoId}` (`EnderecoController.java:68`) · `EnderecoFormDialog.tsx`
+- [x] Excluir endereços → `DELETE .../{enderecoId}` (`EnderecoController.java:86`) · `UsuarioDetalhePage.tsx`
 
-- [ ] (INFERIDO) Um usuário pode ter vários endereços — `Fonte:`
-- [ ] (INFERIDO) Cadastrar endereço para um usuário — `Fonte:`
-- [ ] (INFERIDO) Listar endereços de um usuário — `Fonte:`
-- [ ] (INFERIDO) Editar endereço — `Fonte:`
-- [ ] (INFERIDO) Excluir endereço — `Fonte:`
-- [ ] (INFERIDO) **Apenas UM endereço principal por usuário** — `Fonte:` *(regra confirmada por você no chat, ainda sem trecho do documento)*
-- [ ] (INFERIDO) Ação de definir/trocar qual endereço é o principal — `Fonte:`
-- [ ] (INFERIDO) Campos: CEP, logradouro, número, complemento, bairro, cidade, UF — `Fonte:`
-- [ ] (INFERIDO) Excluir usuário remove os endereços dele (cascade) — `Fonte:`
+O admin age sobre **outro** usuário pelas mesmas rotas: `ControleAcesso.java:48` libera ADMIN antes de comparar os ids. Provado em `EnderecoServiceIT.adminCriaParaOutroUsuario`.
 
-## 4. ViaCEP
+## 3. Usuário comum — as 5 capacidades
 
-- [ ] (INFERIDO) Integração com a API ViaCEP — `Fonte:`
-- [x] (INFERIDO) Busca por CEP preenche os demais campos automaticamente — `Fonte:`
-- [x] (INFERIDO) Chamada feita pelo backend (não direto do browser) — `Fonte:`
-- [x] (INFERIDO) Tratar CEP inexistente — ViaCEP responde HTTP 200 com `{"erro": true}` — `Fonte:`
-- [x] (INFERIDO) Tratar timeout / indisponibilidade do ViaCEP — `Fonte:`
-- [x] (INFERIDO) Validar formato do CEP (8 dígitos) antes de chamar a API externa — `Fonte:`
-- [ ] (INFERIDO) Dados retornados são persistidos junto ao endereço (snapshot) — `Fonte:`
+`Fonte:` *"Usuário comum • Pode visualizar apenas seus próprios dados • Pode visualizar apenas seus próprios endereços • Pode editar seus próprios endereços • Pode definir qual endereço é o principal • Não pode visualizar ou alterar dados de outros usuários"*
 
-## 5. Frontend
+- [x] Visualizar apenas seus próprios dados → `GET /api/usuarios/me` (`:49`) e `GET /api/usuarios/{id}` (`:55`) · tela `UsuarioDetalhePage.tsx`
+- [x] Visualizar apenas seus próprios endereços → `GET /api/usuarios/{id}/enderecos` (`EnderecoController.java:43`) · mesma tela
+- [x] Editar seus próprios endereços → `PUT .../{enderecoId}` (`:68`) · `EnderecoFormDialog.tsx`
+- [x] Definir qual endereço é o principal → `PATCH .../{enderecoId}/principal` (`:79` → `EnderecoService.java:176`) · botão em `UsuarioDetalhePage.tsx`
+- [x] **Não** pode ver/alterar dados de outros → `ControleAcesso.java:48`; consulta filtrada por dono em `EnderecoRepository.findByIdAndUsuarioId`
 
-- [ ] (INFERIDO) React + Vite + TypeScript — `Fonte:`
-- [ ] (INFERIDO) Comunicação HTTP via Axios — `Fonte:`
-- [ ] (INFERIDO) Tela de listagem de usuários — `Fonte:`
-- [ ] (INFERIDO) Formulário de criação/edição de usuário — `Fonte:`
-- [ ] (INFERIDO) Tela/seção de endereços do usuário — `Fonte:`
-- [ ] (INFERIDO) Formulário de endereço com busca por CEP — `Fonte:`
-- [ ] (INFERIDO) Indicação visual de qual endereço é o principal — `Fonte:`
-- [ ] (INFERIDO) Validação de formulário no cliente (espelhando, não substituindo, o backend) — `Fonte:`
-- [ ] (INFERIDO) Estados de loading e erro visíveis ao usuário — `Fonte:`
-- [ ] (INFERIDO) Feedback de sucesso nas ações — `Fonte:`
-- [ ] (INFERIDO) Layout responsivo — `Fonte:`
+- [x] As regras de acesso garantidas pelo backend
+      `Fonte:` *"As regras de acesso devem ser garantidas pelo backend."*
+      → duas camadas: por rota em `SecurityConfig` e por regra em `ControleAcesso`. O frontend só esconde o que a pessoa não pode — `RotaProtegida.tsx` e `ehAdmin` são UX, documentado no próprio código. Provado em `ControleAcessoTest`, `ContratoHttpIT` (403 e 404 nos dois caminhos de vazamento) e `EnderecoServiceIT`.
 
-## 6. Backend
+## 4. Autenticação
 
-- [ ] (INFERIDO) Java 21 + Spring Boot — `Fonte:`
-- [x] (INFERIDO) API REST com verbos e status HTTP corretos — `Fonte:`
-- [x] (INFERIDO) Arquitetura em camadas: Controller -> Service -> Repository — `Fonte:`
-- [x] (INFERIDO) DTOs separados das entidades (entidade nunca vaza no JSON) — `Fonte:`
-- [x] (INFERIDO) Bean Validation nos DTOs de entrada — `Fonte:`
-- [x] (INFERIDO) Tratamento global de erros (`@RestControllerAdvice`) com payload padronizado — `Fonte:`
-- [ ] (INFERIDO) Transações explícitas onde há escrita multi-passo — `Fonte:`
-- [x] (INFERIDO) CORS configurado para o frontend — `Fonte:`
-- [ ] (INFERIDO) Configuração via variáveis de ambiente (sem segredo no código) — `Fonte:`
+- [x] Mecanismo de autenticação
+      `Fonte:` *"A estratégia de autenticação fica a critério do candidato. Exemplos: • Login com CPF e senha • Token de autenticação (ex: JWT) • Sessão"*
+      → escolhido login por CPF + senha com JWT: `AuthController.java:26`, `JwtService.java:35`, BCrypt em `SecurityConfig.java:52`; tela `LoginPage.tsx`
 
-## 7. Banco
+## 5. Gerenciamento de endereços
 
-- [ ] (INFERIDO) PostgreSQL — `Fonte:`
-- [ ] (INFERIDO) Tabela de usuários — `Fonte:`
-- [ ] (INFERIDO) Tabela de endereços com FK para usuário — `Fonte:`
-- [ ] (INFERIDO) Constraint de unicidade do e-mail — `Fonte:`
-- [ ] (INFERIDO) Constraint garantindo um único endereço principal por usuário — `Fonte:`
-- [ ] (INFERIDO) Índices nas colunas de busca frequente — `Fonte:`
-- [ ] (INFERIDO) Migrations versionadas (Flyway) — `Fonte:`
-- [x] (INFERIDO) Script ou seed de dados inicial — `Fonte:`
+- [x] Um ou mais endereços por usuário
+      `Fonte:` *"Cada usuário pode possuir um ou mais endereços cadastrados."*
+      → FK + `idx_enderecos_usuario_id` em `V2__create_enderecos.sql`
+- [x] Campos CEP, Número, Complemento (opcional), Logradouro, Bairro, Cidade, Estado
+      `Fonte:` *"Cada endereço deve conter: • CEP • Número • Complemento (opcional) • Logradouro • Bairro • Cidade • Estado"*
+      → `Endereco.java`. O documento diz "Estado", a coluna é `uf VARCHAR(2)`; o rótulo do formulário segue o documento (`EnderecoFormDialog.tsx`)
 
-## 8. Entrega
+## 6. Regras de negócio — endereços
 
-- [ ] (INFERIDO) Repositório Git com histórico de commits legível — `Fonte:`
-- [ ] (INFERIDO) README com instruções de execução — `Fonte:`
-- [ ] (INFERIDO) README documentando decisões técnicas — `Fonte:`
-- [ ] (INFERIDO) Projeto sobe com um comando (`docker compose up`) — `Fonte:`
-- [ ] (INFERIDO) Coleção de endpoints / Swagger para o avaliador testar — `Fonte:`
-- [ ] (INFERIDO) Prazo de entrega — `Fonte:`
-- [ ] (INFERIDO) Formato de entrega (link do repo, zip, e-mail) — `Fonte:`
+- [x] CEP válido preenche os campos via ViaCEP
+      `Fonte:` *"Ao informar um CEP válido, os campos de endereço devem ser preenchidos automaticamente utilizando a API ViaCEP."*
+      → `CepService.java:44` / `CepController.java:27`; no cliente dispara no **blur** do campo CEP (`EnderecoFormDialog.tsx`, `preencherPeloCep`)
+- [x] Cadastrar múltiplos endereços
+      `Fonte:` *"O usuário deve poder cadastrar múltiplos endereços."*
+- [x] Apenas um endereço principal
+      `Fonte:` *"Cada usuário deve possuir apenas um endereço principal."*
+      → índice único **parcial** `uk_enderecos_um_principal_por_usuario` (`V2`). Um `UNIQUE (usuario_id, principal)` comum estaria errado: limitaria também a 1 os não-principais
+- [x] Novo principal atualiza o anterior
+      `Fonte:` *"Caso um novo endereço seja definido como principal, o endereço principal anterior deve ser atualizado automaticamente."*
+      → `EnderecoService.java:176`; rebaixa antes de promover, senão existiria um instante com dois principais e o índice abortaria a transação
+- [x] Principal removido promove outro
+      `Fonte:` *"Caso o endereço principal seja removido, outro endereço do usuário deve automaticamente se tornar o principal."*
+      → `EnderecoService.java:221`, com `flush()` explícito para o DELETE chegar ao banco antes do UPDATE
 
-## 9. Diferenciais
+## 7. Consulta de CEP
 
-- [ ] (INFERIDO) React Query para cache e estados de servidor — `Fonte:`
-- [ ] (INFERIDO) shadcn/ui como camada de componentes — `Fonte:`
-- [ ] (INFERIDO) Docker Compose (Postgres + backend + frontend) — `Fonte:`
-- [ ] (INFERIDO) Testes automatizados no backend (unitários + integração) — `Fonte:`
-- [ ] (INFERIDO) Testes automatizados no frontend — `Fonte:`
-- [ ] (INFERIDO) Documentação de API (Swagger/OpenAPI) — `Fonte:`
-- [ ] (INFERIDO) Tratamento de erros consistente ponta a ponta — `Fonte:`
+- [x] Consumir a API ViaCEP
+      `Fonte:` *"A aplicação deve consumir a API ViaCEP para preenchimento automático dos dados de endereço."*
+      → `ViaCepClient.java`, chamada pelo backend (o navegador nunca fala com o ViaCEP)
+- [x] Evitar consultas repetidas desnecessárias
+      `Fonte:` *"Sempre que possível, a aplicação deve evitar consultas repetidas desnecessárias à API externa."*
+      → **duas camadas**: `@Cacheable` em `CepService.java:36` (Caffeine, TTL 24h) poupa a chamada ao ViaCEP; `queryClient.fetchQuery` com `staleTime: Infinity` em `api/cep.ts` poupa até a chamada ao nosso backend. Testado em `CepServiceIT`
+
+## 8. Funcionalidades da aplicação — os 7 itens
+
+`Fonte:` *"1. Cadastro de usuários / 2. Listagem de usuários / 3. Visualização de usuário / 4. Cadastro de endereços / 5. Edição de endereços / 6. Definição de endereço principal / 7. Exclusão de endereço"*
+
+- [x] 1. Cadastro de usuários → `CadastroPage.tsx`
+- [x] 2. Listagem de usuários, restrita ao administrador → `UsuariosPage.tsx`
+- [x] 3. Visualização de usuário com dados **e** lista de endereços → `UsuarioDetalhePage.tsx` (uma única requisição: o backend compõe em `UsuarioService.java:80`)
+- [x] 4. Cadastro de endereços → `EnderecoFormDialog.tsx`
+- [x] 5. Edição de endereços → mesmo componente, modo edição
+- [x] 6. Definição de endereço principal → `UsuarioDetalhePage.tsx`
+- [x] 7. Exclusão de endereço → `UsuarioDetalhePage.tsx`, com confirmação que avisa quando o excluído é o principal
+
+## 9. Frontend
+
+- [x] Utilizar React — `Fonte:` *"Utilizar React."* → React 19 + Vite + TypeScript
+- [x] Formulário de cadastro de usuário (Nome, CPF, Senha) → `CadastroPage.tsx`. Traz também data de nascimento (ver decisão 1) e e-mail (decisão 2)
+- [x] Formulário de cadastro de endereço (CEP, Número, Complemento) → `EnderecoFormDialog.tsx`
+- [x] Campos preenchidos automaticamente após consulta do CEP
+      `Fonte:` *"Os campos de endereço devem ser preenchidos automaticamente após consulta do CEP."*
+- [x] Lista de usuários → `UsuariosPage.tsx`
+- [x] Lista de endereços por usuário → `UsuarioDetalhePage.tsx`
+- [x] Validações: campos obrigatórios, formato válido de CPF, CEP válido
+      `Fonte:` *"Validações: • Campos obrigatórios • Formato válido de CPF • CEP válido"*
+      → zod + `lib/validacao.ts`. O cabeçalho do arquivo lista cada regra com o par dela no servidor: é validação de UX, e o backend valida de novo
+- [~] Interface responsiva
+      `Fonte:` *"A interface deve ser responsiva."*
+      → escrita para isso (grades que empilham, tabelas em `overflow-x-auto`, colunas secundárias ocultas no telefone, nav com `flex-wrap`). **Não verificada em navegador: não há Chrome na máquina de desenvolvimento.**
+
+## 10. Backend
+
+- [x] Java + Spring Boot, API REST — `Fonte:` *"Utilizar Java + Spring Boot ou então Groovy + Grails para construção de uma API REST."*
+- [x] Criar usuários · Listar usuários · Buscar dados de um usuário → `UsuarioController.java:36, :44, :55`
+- [x] Criar · Atualizar · Excluir endereços → `EnderecoController.java:55, :68, :86`
+- [x] Garantir todas as regras de negócio — `Fonte:` *"O backend deve garantir todas as regras de negócio definidas."*
+
+O documento **não** pede editar nem excluir usuário; a lista da API é exatamente a acima.
+
+## 11. Banco de dados
+
+- [x] Banco relacional — `Fonte:` *"Utilizar um banco de dados relacional, como: • MySQL • PostgreSQL • SQLite"* → PostgreSQL 16
+- [x] Estrutura definida pelo candidato → 4 migrations Flyway, constraints e índices documentados em cada arquivo
+
+## 12. Integração
+
+- [x] Frontend consome a API para cadastro, listagem e atualização — `Fonte:` *"O frontend deve consumir a API backend"*
+- [x] Axios ou Fetch — `Fonte:` *"Utilizar Axios ou Fetch API para comunicação HTTP."* → Axios em `lib/api.ts`, com interceptors de token e de 401
+
+## 13. Entrega
+
+- [ ] **Repositório público no GitHub**
+      `Fonte:` *"Todo o código deve ser disponibilizado em um repositório público no GitHub."*
+      → **PENDENTE.** Não há remote configurado; os commits existem só na máquina local. É requisito binário: sem isso não há entrega
+- [x] Código do frontend e do backend no repositório
+- [x] README com descrição do projeto → `README.md:1`
+- [x] README com instruções para rodar → `README.md:12`
+
+## 14. Diferenciais
+
+- [x] React Query — `useQuery` nas listagens (`api/usuarios.ts`, `api/enderecos.ts`), mutations com invalidação por chave centralizada (`api/chaves.ts`)
+- [x] shadCN — 14 componentes
+- [x] Docker para subir o projeto — `docker compose up` sobe **db + api + web**; o frontend tem `Dockerfile` multi-stage e nginx com fallback de SPA
+- [x] Organização do backend em camadas — Controller → Service → Repository, agrupado por feature
+- [x] Tratamento adequado de erros da API — `GlobalExceptionHandler` no backend, formato único `ApiError`; no cliente `lib/erros.ts` traduz status e erros de campo
+- [~] Testes automatizados — backend com 88 testes (`mvn verify`); **frontend sem testes**
 
 ---
 
-## Perguntas em aberto (responder com o documento em mãos)
+# Ambiguidades e decisões
 
-- [ ] O teste pede autenticação de fato, ou "Acesso" significa só controle de permissão?
-- [ ] Existem roles distintas? Quais?
-- [ ] O primeiro endereço cadastrado vira principal automaticamente?
-- [ ] Ao excluir o endereço principal, outro é promovido, ou o usuário fica sem principal?
-- [ ] Um usuário PRECISA ter pelo menos um endereço?
-- [ ] Há limite de endereços por usuário?
-- [ ] O CEP deve ser armazenado com ou sem máscara?
-- [ ] Os campos vindos do ViaCEP podem ser editados pelo usuário depois?
-- [ ] Nomes de tabelas/colunas em português ou inglês?
-- [ ] Há requisito de soft delete (exclusão lógica)?
+Pontos em que o documento é omisso, ambíguo ou se contradiz. Cada um tem a
+decisão tomada e a justificativa. Esta seção vai para o README na entrega.
 
----
+## 1. "Data Nascimento" está nos requisitos mas sai do formulário
 
-# Ambiguidades e decisoes
+**Contradição dentro do próprio documento.**
 
-Pontos em que o documento e omisso, ambiguo ou se contradiz. Cada um tem uma
-decisao tomada e a justificativa. Esta secao vai para o README na entrega.
+`Fonte (requisitos):` *"O sistema deve permitir cadastrar usuários contendo: • Nome • CPF • Data Nascimento • Senha"*
+`Fonte (frontend):` *"Formulário de cadastro de usuário: • Nome • CPF • Senha"*
 
-Marcacao: **[D]** decidido e ja implementado · **[P]** decidido, pendente de
-implementacao · **[?]** precisa do documento para fechar.
+**Decisão: seguir os requisitos — implementar no backend e incluir no
+formulário.** A seção de requisitos é o contrato; a de frontend enumera o
+mínimo da tela. Entregar um campo a mais é erro menor do que deixar de fora um
+requisito escrito.
 
-## 1. [D] "Data Nascimento" esta nos requisitos mas some do formulario
+Coluna `data_nascimento DATE`, mapeada para `LocalDate`: data de calendário não
+tem hora nem fuso, então `Instant` estaria errado. Validação `@PastOrPresent`;
+idade mínima não foi mencionada e não inventei.
 
-**Contradicao do documento.** A secao de requisitos de usuario pede Data de
-Nascimento; o formulario do frontend nao mostra o campo.
+## 2. O e-mail não está no documento, mas o backend exige
 
-**Decisao: seguir os requisitos — implementar no backend E incluir no
-formulario.** A secao de requisitos e o contrato; o desenho de tela e
-ilustrativo. Entregar um campo a mais que o mock e um erro menor do que deixar
-de fora um requisito escrito. Coluna `data_nascimento DATE`, mapeada para
-`LocalDate` em Java — data de calendario nao tem hora nem fuso, entao `Instant`
-estaria errado aqui. Validacao `@Past`: idade minima nao foi mencionada e nao
-vou inventar.
+**Divergência que eu mesmo introduzi.** O enunciado **não menciona e-mail em
+nenhum lugar** — nem nos requisitos, nem no formulário. O backend exige:
+`@NotBlank @Email` em `CriarUsuarioRequest`, coluna `email NOT NULL` em `V1:7`
+e índice único funcional `uk_usuarios_email` em `V1:25`.
 
-## 2. [D] O primeiro endereco vira principal automaticamente?
+**Decisão: manter o campo, exibindo-o no formulário.** O documento não proíbe
+campo adicional, e e-mail é dado de contato esperado num cadastro. Remover
+custaria uma migration para derrubar o `NOT NULL` e ajustar o índice único, com
+risco desproporcional ao ganho.
 
-**Omisso.**
+**Registro honesto:** esta não é uma exigência do teste, é uma escolha minha. Se
+o avaliador considerar escopo extra, a correção é uma migration `V5` tornando a
+coluna opcional.
 
-**Decisao: sim, automaticamente.** Se nao virasse, um usuario com exatamente um
-endereco ficaria sem principal — estado inutil que obrigaria todo consumidor de
-"endereco principal" a tratar nulo. O custo de errar e baixo e o comportamento e
-o que o usuario espera.
+## 3. O primeiro endereço vira principal automaticamente?
 
-## 3. [D] Excluir o UNICO endereco do usuario
+**Omisso.** **Decisão: sim.** Sem isso, um usuário com exatamente um endereço
+ficaria sem principal — estado inútil que obrigaria todo consumidor de "endereço
+principal" a tratar nulo. `EnderecoService.java:103`.
 
-**Omisso.** Nao ha outro para promover.
+## 4. Excluir o único endereço do usuário
 
-**Decisao: permitir a exclusao; o usuario fica com zero enderecos e sem
-principal.** A regra e "no maximo um principal", nunca "no minimo um endereco".
-Bloquear prenderia o usuario: ele nao conseguiria apagar um endereco digitado
-errado. O indice unico parcial aceita zero principais naturalmente.
+**Omisso.** Não há outro para promover.
 
-**Caso irmao (tambem omisso): excluir o principal quando existem outros.**
-Decisao: promover automaticamente o mais antigo restante, dentro da mesma
-transacao. Evita o estado esquisito de ter tres enderecos e nenhum principal.
+**Decisão: permitir; o usuário fica com zero endereços e sem principal.** A
+regra do documento é *"apenas um endereço principal"*, nunca "no mínimo um
+endereço". Bloquear prenderia quem digitou errado. O índice único parcial aceita
+zero principais naturalmente.
 
-## 4. [D] O admin pode definir o endereco principal de um usuario?
+## 5. Qual endereço assume quando o principal é excluído?
 
-**Omisso.** A acao aparece so na tela do usuario comum.
+`Fonte:` *"outro endereço do usuário deve automaticamente se tornar o
+principal"* — o documento não diz qual.
 
-**Decisao: sim.** O admin ja le e edita todo o resto do cadastro; tornar
-"definir principal" a unica excecao seria arbitrario e dificil de justificar.
-Ja implementado: `ControleAcesso.exigirAcessoAoUsuario` libera ADMIN antes de
-comparar os ids.
+**Decisão: o mais antigo restante** (`findFirstByUsuarioIdOrderByIdAsc`).
+Critério arbitrário, porém estável e explicável: o alfabético mudaria com uma
+edição de logradouro, e o mais recente favoreceria um cadastro de teste.
 
-## 5. [D] Como nasce o primeiro administrador?
+## 6. O admin pode definir o endereço principal de um usuário?
 
-**Omisso.** O cadastro publico provavelmente cria usuario comum.
+**Ambíguo:** *"definir qual endereço é o principal"* aparece só na lista do
+usuário comum.
 
-**Decisao: migration de seed (`V3__seed_usuarios.sql`), com CPF e senha fixos
-documentados no README.** Precisa existir antes da primeira requisicao, entao
-nao da para depender de endpoint. E o ponto de seguranca que sustenta a decisao:
-**o campo `role` nunca e aceito no corpo da requisicao de cadastro publico** —
-se fosse, qualquer um mandaria `"role":"ADMIN"` no proprio registro. Promocao a
-admin so por outro admin, ou por seed.
+**Decisão: sim.** O admin já cadastra, edita e exclui endereços pelo próprio
+documento; tornar "definir principal" a única exceção seria arbitrário.
+`ControleAcesso.exigirAcessoAoUsuario` libera ADMIN antes de comparar os ids.
 
-## 6. [D] CPF e CEP: guardar com ou sem mascara?
+## 7. Como nasce o primeiro administrador?
 
-**Omisso.**
+**Omisso.** O documento exige dois perfis mas não diz como o primeiro admin
+aparece.
 
-**Decisao: sem mascara, so digitos; formatar na exibicao.** Guardar mascarado
-criaria duas representacoes do mesmo valor ("01001-000" e "01001000") e
-quebraria busca por igualdade e unicidade. Garantido por `CHECK` no banco, nao
-so no service.
+**Decisão: migration de seed (`V3__seed_usuarios.sql`), com CPF e senha
+documentados no README.** Precisa existir antes da primeira requisição, então
+não pode depender de endpoint.
 
-## 7. [D] Usuario inativo consegue logar?
+O ponto de segurança que sustenta isso: **o campo `role` nunca é aceito no corpo
+do cadastro público** — `CriarUsuarioRequest` não tem o campo, e
+`UsuarioService.java:64` fixa `USUARIO_COMUM`. Provado em
+`ContratoHttpIT.roleNoCorpoNaoPromove` e `ValidacaoCadastroTest.semCampoRole`.
 
-**Omisso.** A coluna `ativo` existe.
+## 8. CPF e CEP: guardar com ou sem máscara?
 
-**Decisao: nao.** `AuthService` filtra por `isAtivo` antes de emitir o token, e
-a resposta e o mesmo 401 generico — nao revela que a conta existe mas esta
-desativada.
+**Omisso.** **Decisão: sem máscara, só dígitos; formatar na exibição.** Guardar
+mascarado criaria duas representações do mesmo valor e quebraria busca por
+igualdade e unicidade. Garantido por `CHECK` no banco, não só no service. No
+cliente, `mascararCpf`/`mascararCep` atuam apenas na tela.
 
-## 8. [D] Login por CPF ou tambem por e-mail?
+## 9. Existe auto-cadastro público, ou só o admin cadastra?
 
-**Ambiguo:** o e-mail tambem e unico, entao serviria tecnicamente.
+**Ambíguo:** o documento lista *"Pode cadastrar usuários"* como capacidade do
+admin e, separadamente, *"1. Cadastro de usuários"* como funcionalidade.
 
-**Decisao: somente CPF**, conforme especificado. Duas credenciais de entrada
-dobram a superficie de ataque sem beneficio pedido.
+**Decisão: `POST /api/usuarios` público, criando sempre `USUARIO_COMUM`.** Sem
+isso não haveria como um usuário novo entrar no sistema, e o requisito de CPF
+duplicado não teria onde acontecer. O admin usa a mesma rota.
 
-## 9. [P] Exclusao fisica ou logica (soft delete)?
+## 10. Usuário inativo consegue logar?
 
-**Omisso.**
+**Omisso.** A coluna `ativo` existe. **Decisão: não.** `AuthService` filtra por
+`isAtivo` antes de emitir o token, e responde o mesmo 401 genérico — não revela
+que a conta existe mas está desativada.
 
-**Decisao: exclusao fisica, com `ON DELETE CASCADE` nos enderecos.** Nada no
-que foi pedido menciona historico ou auditoria de removidos. A coluna `ativo`
-ja cobre o caso "desativar sem apagar", que e diferente de excluir.
+## 11. Exclusão física ou lógica?
 
-## 10. [D] Existe auto-cadastro publico, ou so o admin cadastra usuarios?
+**Omisso.** **Decisão: exclusão física, com `ON DELETE CASCADE` nos endereços.**
+Nada no documento menciona histórico ou auditoria. Observação: como o documento
+não pede exclusão de usuário, o cascade não é alcançável pela API hoje — existe
+como garantia de integridade do schema.
 
-**Decisao: `POST /api/usuarios` publico, criando sempre USUARIO_COMUM.** Sem
-ele nao haveria como um usuario novo entrar no sistema, e o requisito de CPF
-duplicado nao teria onde acontecer. O DTO de entrada nao tem campo `role`, entao
-nao existe caminho para autopromocao. **Ainda vale confirmar no documento.**
+## 12. 403 ou 404 ao pedir recurso de outro usuário?
 
-## 11. [?] O usuario comum pode editar e excluir a propria conta?
+**Omisso.** **Decisão: os dois, conforme o caminho.**
 
-**Proposta**: pode editar; excluir so o admin. **Precisa de confirmacao.**
+- URL de outro usuário (`/api/usuarios/{outro}/enderecos`) → **403**: é
+  semanticamente honesto, "existe e você não pode".
+- Id de endereço alheio na própria rota → **404**, porque a consulta filtra por
+  dono. Aqui um 403 confirmaria que aquele id existe em alguma conta.
 
-## 12. [D] Paginacao na listagem de usuarios
+Ambos provados em `ContratoHttpIT`.
 
-**Omisso.** **Decisao: `Pageable` do Spring Data na listagem do admin.** Custa
-uma linha e evita carregar a tabela inteira. Listagem de enderecos fica sem
-paginar: e sempre de um unico usuario, volume naturalmente pequeno.
+## 13. Os campos preenchidos pelo ViaCEP podem ser editados depois?
 
-## 13. [D] Os campos preenchidos pelo ViaCEP podem ser editados depois?
+**Omisso.** **Decisão: sim, são editáveis.** O ViaCEP devolve logradouro
+genérico ou vazio para CEP de faixa única, e número e complemento nunca vêm de
+lá. Os dados são gravados como snapshot no nosso banco — não dependemos do
+ViaCEP estar no ar para exibir um endereço já cadastrado.
 
-**Omisso.**
+## 14. Formato de data e fuso na API
 
-**Decisao: sim, sao editaveis.** ViaCEP as vezes devolve logradouro generico ou
-vazio para CEP de faixa unica, e numero e complemento nunca vem de la. Os dados
-sao gravados como snapshot no nosso banco — nao dependemos do ViaCEP estar no ar
-para exibir um endereco ja cadastrado.
+**Omisso.** **Decisão: ISO-8601 em UTC**, colunas `TIMESTAMPTZ` e `Instant` em
+Java. `data_nascimento` é a exceção: `DATE`/`LocalDate`, sem fuso, porque data
+de nascimento não muda conforme o fuso de quem lê. No cliente,
+`formato.ts:formatarData` quebra a string em vez de usar `new Date(iso)`, que
+interpretaria como UTC e exibiria o dia anterior em fuso negativo.
 
-## 14. [P] Limite de enderecos por usuario
+## 15. Onde o token fica guardado no cliente
 
-**Omisso.** **Decisao: sem limite.** Inventar um teto seria regra nao pedida.
+**Omisso** — o documento deixa a estratégia a critério do candidato.
 
-## 15. [D] Formato de data e fuso na API
+**Decisão: `localStorage`.** Trade-off assumido em `lib/token.ts`: é legível por
+JavaScript, então um XSS consegue roubá-lo. Cookie `httpOnly` seria mais seguro,
+mas exigiria o backend ler cookie em vez do header `Authorization` e reativar a
+proteção CSRF — hoje desligada justamente porque não há cookie. Mitigações: o
+token expira em 120 minutos e não carrega nada sensível além de id, CPF e role.
 
-**Omisso.** **Decisao: ISO-8601 em UTC.** Colunas `TIMESTAMPTZ`, `Instant` em
-Java. `data_nascimento` e a excecao: `DATE`/`LocalDate`, sem fuso, porque data
-de nascimento nao muda conforme o fuso de quem le.
+## 16. Resolvido: URL inexistente respondia 500
 
-## 16. [D] 403 ou 404 ao pedir recurso de outro usuario?
+Defeito encontrado na auditoria, **já corrigido**. `SecurityConfig` liberava
+`/actuator/health`, mas o starter do actuator não estava no `pom.xml`: a rota
+não existia, a requisição caía no `@ExceptionHandler(Exception.class)` e voltava
+**500** em vez de 404 — qualquer erro de digitação numa URL produzia 500.
 
-**Omisso.**
-
-**Decisao: 403.** E semanticamente honesto ("existe e voce nao pode"). O
-contra-argumento e que 403 confirma a existencia do id — julguei irrelevante
-porque os ids sao `BIGINT` sequenciais e a existencia ja e trivialmente
-dedutivel. Trocar para 404 e mudar uma excecao numa linha, caso o avaliador
-prefira esconder.
-
-## 17. [P] O formulario de cadastro nao lista e-mail, mas o backend exige
-
-**Contradicao do documento**, do mesmo tipo da decisao #1 (data de nascimento):
-a tela de cadastro pede nome, CPF, data de nascimento e senha. O backend exige
-e-mail — `@NotBlank @Email` em `CriarUsuarioRequest`, coluna `email NOT NULL` e
-indice unico funcional `uk_usuarios_email` sobre `lower(email)`. Um cadastro sem
-e-mail responde 400.
-
-**Decisao: incluir o campo e-mail no formulario.** Mesmo precedente da #1 — a
-secao de requisitos e o contrato, o desenho de tela e ilustrativo, e entregar um
-campo a mais custa menos do que deixar de fora uma coluna obrigatoria.
-
-Alternativas descartadas:
-
-- *Tornar o e-mail opcional no backend*: exigiria mexer em DTO, migration e no
-  indice unico, e jogaria fora a unicidade de e-mail que ja esta no schema.
-- *Gerar e-mail sintetico a partir do CPF*: grava dado falso no banco. Um
-  `52998224725@exemplo.invalid` passaria a validacao e mentiria para sempre.
-
-## 18. [?] Pendencia tecnica: /actuator/health responde 500
-
-Nao e ambiguidade do documento, e um defeito encontrado na etapa 4.
-
-`SecurityConfig` libera `/actuator/health` com `permitAll`, mas
-`spring-boot-starter-actuator` nao esta no `pom.xml`. A rota nao existe, a
-requisicao cai no `@ExceptionHandler(Exception.class)` do
-`GlobalExceptionHandler` e volta **500** em vez de 404.
-
-Duas consequencias: nao ha endpoint de health para o compose ou um orquestrador
-consultarem, e **qualquer URL inexistente da API responde 500**, nao 404 — o
-que um avaliador encontra no primeiro erro de digitacao.
-
-**Correcao proposta** (ainda nao aplicada): adicionar o starter do actuator e um
-`@ExceptionHandler(NoResourceFoundException.class)` devolvendo 404.
+Correção: starter do actuator adicionado (habilita também o healthcheck do
+compose) e `@ExceptionHandler(NoResourceFoundException.class)` devolvendo 404.
+Regressão coberta por `ContratoHttpIT.urlInexistenteDa404`.
