@@ -69,6 +69,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
 
+                // Cadastro publico. O DTO nao tem campo role, entao ninguem
+                // se cadastra como ADMIN por aqui.
+                .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+
                 // Listar todos os usuarios e operacao administrativa. Barrado
                 // aqui, antes de chegar ao controller.
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")

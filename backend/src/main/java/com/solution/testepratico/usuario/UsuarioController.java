@@ -1,12 +1,17 @@
 package com.solution.testepratico.usuario;
 
+import com.solution.testepratico.usuario.dto.CriarUsuarioRequest;
 import com.solution.testepratico.usuario.dto.UsuarioDetalheResponse;
 import com.solution.testepratico.usuario.dto.UsuarioResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -25,6 +30,15 @@ public class UsuarioController {
 
     public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
+    }
+
+    /** Cadastro publico. Cria sempre USUARIO_COMUM. */
+    @PostMapping
+    public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody CriarUsuarioRequest request,
+                                                 UriComponentsBuilder uriBuilder) {
+        UsuarioResponse criado = usuarioService.criar(request);
+        var uri = uriBuilder.path("/api/usuarios/{id}").buildAndExpand(criado.id()).toUri();
+        return ResponseEntity.created(uri).body(criado);
     }
 
     @GetMapping
