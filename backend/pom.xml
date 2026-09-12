@@ -91,6 +91,29 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+              Surefire roda os testes *Test na fase test: rapidos, sem
+              infraestrutura. Failsafe roda os *IT na fase verify: precisam de
+              um Postgres de pe.
+
+              A separacao importa porque as regras de endereco principal nao
+              podem ser provadas com mock - uma e constraint do banco, outra
+              depende da ordem de flush do Hibernate. Misturar as duas suites
+              faria um teste de regra falhar por falta de container.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
