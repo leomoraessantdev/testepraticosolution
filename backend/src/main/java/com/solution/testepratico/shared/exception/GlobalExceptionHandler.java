@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -75,6 +77,63 @@ public class GlobalExceptionHandler {
         log.warn("Violacao de integridade em {}: {}", req.getRequestURI(), e.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT, "Conflito",
                 "A operacao conflita com o estado atual dos dados.", req);
+    }
+
+    // ---------- Integracao externa ----------
+
+    @ExceptionHandler(CepNaoEncontradoException.class)
+    public ResponseEntity<ApiError> cepNaoEncontrado(CepNaoEncontradoException e,
+                                                     HttpServletRequest req) {
+        return build(HttpStatus.NOT_FOUND, "CEP nao encontrado", e.getMessage(), req);
+    }
+
+    /**
+     * 503 e nao 500: o defeito nao e nosso e a condicao e transitoria. O
+     * cliente pode repetir, e o status diz exatamente isso.
+     */
+    @ExceptionHandler(ServicoExternoIndisponivelException.class)
+    public ResponseEntity<ApiError> servicoExternoIndisponivel(ServicoExternoIndisponivelException e,
+                                                               HttpServletRequest req) {
+        log.error("Dependencia externa indisponivel em {}", req.getRequestURI(), e);
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "Servico indisponivel", e.getMessage(), req);
+    }
+
+    // ---------- Conflitos de cadastro ----------
+
+    @ExceptionHandler(CpfDuplicadoException.class)
+    public ResponseEntity<ApiError> cpfDuplicado(CpfDuplicadoException e, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, "Conflito", e.getMessage(), req);
+    }
+
+    @ExceptionHandler(EmailDuplicadoException.class)
+    public ResponseEntity<ApiError> emailDuplicado(EmailDuplicadoException e, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, "Conflito", e.getMessage(), req);
+    }
+
+    // ---------- Requisicao malformada ----------
+
+    /**
+     * Corpo que o Jackson nao consegue ler: JSON quebrado, ou data invalida
+     * como "2020-13-45" e "31/02/2020".
+     *
+     * Sem este handler o Spring devolveria 400 com o payload padrao dele, fora
+     * do nosso formato, e a mensagem carregaria o nome da classe Java do DTO.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> corpoIlegivel(HttpMessageNotReadableException e,
+                                                  HttpServletRequest req) {
+        log.warn("Corpo ilegivel em {}: {}", req.getRequestURI(), e.getMostSpecificCause().getMessage());
+        return build(HttpStatus.BAD_REQUEST, "Dados invalidos",
+                "Corpo da requisicao malformado. Verifique os tipos e o formato das datas (aaaa-mm-dd).",
+                req);
+    }
+
+    /** Tipo errado na URL: /api/usuarios/abc onde se espera um numero. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> tipoInvalido(MethodArgumentTypeMismatchException e,
+                                                 HttpServletRequest req) {
+        return build(HttpStatus.BAD_REQUEST, "Dados invalidos",
+                "Valor invalido para o parametro " + e.getName() + ".", req);
     }
 
     /**
