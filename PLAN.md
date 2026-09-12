@@ -287,3 +287,38 @@ contra-argumento e que 403 confirma a existencia do id — julguei irrelevante
 porque os ids sao `BIGINT` sequenciais e a existencia ja e trivialmente
 dedutivel. Trocar para 404 e mudar uma excecao numa linha, caso o avaliador
 prefira esconder.
+
+## 17. [P] O formulario de cadastro nao lista e-mail, mas o backend exige
+
+**Contradicao do documento**, do mesmo tipo da decisao #1 (data de nascimento):
+a tela de cadastro pede nome, CPF, data de nascimento e senha. O backend exige
+e-mail — `@NotBlank @Email` em `CriarUsuarioRequest`, coluna `email NOT NULL` e
+indice unico funcional `uk_usuarios_email` sobre `lower(email)`. Um cadastro sem
+e-mail responde 400.
+
+**Decisao: incluir o campo e-mail no formulario.** Mesmo precedente da #1 — a
+secao de requisitos e o contrato, o desenho de tela e ilustrativo, e entregar um
+campo a mais custa menos do que deixar de fora uma coluna obrigatoria.
+
+Alternativas descartadas:
+
+- *Tornar o e-mail opcional no backend*: exigiria mexer em DTO, migration e no
+  indice unico, e jogaria fora a unicidade de e-mail que ja esta no schema.
+- *Gerar e-mail sintetico a partir do CPF*: grava dado falso no banco. Um
+  `52998224725@exemplo.invalid` passaria a validacao e mentiria para sempre.
+
+## 18. [?] Pendencia tecnica: /actuator/health responde 500
+
+Nao e ambiguidade do documento, e um defeito encontrado na etapa 4.
+
+`SecurityConfig` libera `/actuator/health` com `permitAll`, mas
+`spring-boot-starter-actuator` nao esta no `pom.xml`. A rota nao existe, a
+requisicao cai no `@ExceptionHandler(Exception.class)` do
+`GlobalExceptionHandler` e volta **500** em vez de 404.
+
+Duas consequencias: nao ha endpoint de health para o compose ou um orquestrador
+consultarem, e **qualquer URL inexistente da API responde 500**, nao 404 — o
+que um avaliador encontra no primeiro erro de digitacao.
+
+**Correcao proposta** (ainda nao aplicada): adicionar o starter do actuator e um
+`@ExceptionHandler(NoResourceFoundException.class)` devolvendo 404.
