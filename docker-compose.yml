@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: teste-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-teste_pratico}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Sem healthcheck o Postgres aceita conexao antes de estar pronto para
+    # consultas e o Flyway falha no primeiro boot.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-teste_pratico}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    container_name: teste-api
+    # service_healthy, nao apenas service_started: o compose so sobe a API
+    # depois que o healthcheck acima passar.
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-teste_pratico}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      # Sem default aqui tambem: se JWT_SECRET nao estiver no .env, o compose
+      # para com mensagem explicita em vez de subir com segredo conhecido.
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no arquivo .env (veja .env.example)}
+      JWT_EXPIRACAO_MINUTOS: ${JWT_EXPIRACAO_MINUTOS:-120}
+      CORS_ORIGENS: ${CORS_ORIGENS:-http://localhost:5173}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  pgdata:
