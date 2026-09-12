@@ -224,13 +224,59 @@ com justificativas, esta em [PLAN.md](PLAN.md). Os principais:
 
 ---
 
+## Endpoints
+
+Todos exigem `Authorization: Bearer <token>`, exceto o login.
+
+| Metodo | Rota | Quem pode |
+|---|---|---|
+| POST | `/api/auth/login` | publico |
+| GET | `/api/usuarios` | ADMIN |
+| GET | `/api/usuarios/me` | proprio |
+| GET | `/api/usuarios/{id}` | proprio ou ADMIN |
+| GET | `/api/usuarios/{id}/enderecos` | proprio ou ADMIN |
+| POST | `/api/usuarios/{id}/enderecos` | proprio ou ADMIN |
+| GET | `/api/usuarios/{id}/enderecos/{enderecoId}` | proprio ou ADMIN |
+| PUT | `/api/usuarios/{id}/enderecos/{enderecoId}` | proprio ou ADMIN |
+| PATCH | `/api/usuarios/{id}/enderecos/{enderecoId}/principal` | proprio ou ADMIN |
+| DELETE | `/api/usuarios/{id}/enderecos/{enderecoId}` | proprio ou ADMIN |
+| GET | `/api/enderecos` | ADMIN |
+
+`GET /api/usuarios/{id}` devolve os dados do usuario com a lista de enderecos.
+O admin opera sobre outro usuario pelas MESMAS rotas: nao ha endpoint paralelo
+de administracao. Quem decide e o ControleAcesso dentro do service.
+
+### As tres regras do endereco principal
+
+| Regra | Onde vive |
+|---|---|
+| No maximo um principal por usuario | indice unico parcial `uk_enderecos_um_principal_por_usuario` (migration V2) |
+| Novo principal rebaixa o anterior | `EnderecoService.definirPrincipal()` e `EnderecoService.criar()` |
+| Excluir o principal promove outro | `EnderecoService.excluir()` |
+
+A primeira e invariante de dados e nao mora em metodo nenhum: e o banco que a
+garante, inclusive sob concorrencia. As outras duas sao comportamento, e cada
+uma roda dentro de uma unica transacao, porque sao dois passos que precisam
+valer juntos.
+
+---
+
 ## Testes
 
-28 testes unitarios, cobrindo validacao de CPF, ciclo do JWT (incluindo token
+46 testes: 28 unitarios (`mvn test`) e 18 de integracao contra um Postgres
+de verdade (`mvn verify`). Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
 adulterado e expirado), a regra de isolamento entre usuarios, e a conferencia
 dos hashes do seed contra as senhas documentadas.
 
-Testes de integracao com Testcontainers entram na etapa de testes.
+Os testes de integracao existem porque as regras do endereco principal nao
+podem ser provadas com mock: uma e constraint do banco, outra depende da ordem
+em que o Hibernate emite DELETE e UPDATE. Um repositorio simulado concordaria
+com qualquer implementacao, inclusive com a errada.
+
+```bash
+docker compose up -d db      # integracao precisa do Postgres de pe
+docker run --rm --network testepraticosolution_default \n  -e DB_URL=jdbc:postgresql://db:5432/teste_pratico \n  -e JWT_SECRET=qualquer-segredo-de-teste-com-32-bytes-ou-mais \n  -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn verify
+```
 
 ---
 

@@ -90,8 +90,8 @@
 ## 6. Backend
 
 - [ ] (INFERIDO) Java 21 + Spring Boot — `Fonte:`
-- [ ] (INFERIDO) API REST com verbos e status HTTP corretos — `Fonte:`
-- [ ] (INFERIDO) Arquitetura em camadas: Controller -> Service -> Repository — `Fonte:`
+- [x] (INFERIDO) API REST com verbos e status HTTP corretos — `Fonte:`
+- [x] (INFERIDO) Arquitetura em camadas: Controller -> Service -> Repository — `Fonte:`
 - [x] (INFERIDO) DTOs separados das entidades (entidade nunca vaza no JSON) — `Fonte:`
 - [x] (INFERIDO) Bean Validation nos DTOs de entrada — `Fonte:`
 - [x] (INFERIDO) Tratamento global de erros (`@RestControllerAdvice`) com payload padronizado — `Fonte:`
@@ -168,7 +168,7 @@ de fora um requisito escrito. Coluna `data_nascimento DATE`, mapeada para
 estaria errado aqui. Validacao `@Past`: idade minima nao foi mencionada e nao
 vou inventar.
 
-## 2. [P] O primeiro endereco vira principal automaticamente?
+## 2. [D] O primeiro endereco vira principal automaticamente?
 
 **Omisso.**
 
@@ -177,7 +177,7 @@ endereco ficaria sem principal — estado inutil que obrigaria todo consumidor d
 "endereco principal" a tratar nulo. O custo de errar e baixo e o comportamento e
 o que o usuario espera.
 
-## 3. [P] Excluir o UNICO endereco do usuario
+## 3. [D] Excluir o UNICO endereco do usuario
 
 **Omisso.** Nao ha outro para promover.
 
@@ -251,7 +251,7 @@ publico criando sempre USUARIO_COMUM. **Precisa de confirmacao no documento.**
 
 **Proposta**: pode editar; excluir so o admin. **Precisa de confirmacao.**
 
-## 12. [P] Paginacao na listagem de usuarios
+## 12. [D] Paginacao na listagem de usuarios
 
 **Omisso.** **Decisao: `Pageable` do Spring Data na listagem do admin.** Custa
 uma linha e evita carregar a tabela inteira. Listagem de enderecos fica sem
