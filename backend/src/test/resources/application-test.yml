@@ -1,0 +1,29 @@
+# Perfil "test": o que os testes de integracao precisam para subir.
+#
+# O arquivo se chama application-test.yml, e NAO application.yml, de proposito.
+# Em Maven, target/test-classes vem antes de target/classes no classpath, e o
+# Spring Boot carrega apenas o PRIMEIRO application.yml que encontra. Um
+# application.yml aqui sombrearia o de src/main/resources e levaria embora a
+# configuracao de Flyway, JPA e CORS. Arquivo de perfil, ao contrario, e
+# carregado POR CIMA do principal, sobrescrevendo so as chaves declaradas.
+#
+# Ativado por @ActiveProfiles("test") nas classes de teste.
+
+app:
+  jwt:
+    # O application.yml principal le ${JWT_SECRET} sem valor padrao, de
+    # proposito: a aplicacao nao deve subir em producao com segredo default.
+    # O efeito colateral e que o contexto de teste tambem nao subia. Aqui o
+    # segredo e fixo e publico — assina apenas tokens de teste.
+    # Mais de 32 bytes porque HS256 exige chave de 256 bits.
+    secret: segredo-exclusivo-de-teste-com-mais-de-32-bytes-para-hs256
+    expiracao-minutos: 120
+
+  viacep:
+    # Host deliberadamente inexistente (.invalid e reservado pela RFC 2606).
+    #
+    # Nenhum teste deve tocar o ViaCEP de verdade: o ViaCepClient e substituido
+    # por mock. Se alguem remover esse mock, o teste falha por rede em vez de
+    # passar silenciosamente castigando um servico publico gratuito a cada
+    # execucao da suite.
+    url: http://viacep-nao-deve-ser-chamado.invalid/ws

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
  * internet nem castiga um servico publico gratuito a cada execucao.
  */
 @SpringBootTest
+@ActiveProfiles("test")
 class CepServiceIT {
 
     private static final String CEP = "01310100";
