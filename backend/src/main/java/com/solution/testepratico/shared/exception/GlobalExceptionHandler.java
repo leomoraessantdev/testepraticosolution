@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -134,6 +135,21 @@ public class GlobalExceptionHandler {
                                                  HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, "Dados invalidos",
                 "Valor invalido para o parametro " + e.getName() + ".", req);
+    }
+
+    /**
+     * URL que nao corresponde a nenhum endpoint.
+     *
+     * Sem este handler a requisicao caia no @ExceptionHandler(Exception.class)
+     * abaixo e voltava 500, dizendo ao cliente que o servidor falhou quando o
+     * errado era o caminho pedido. Qualquer erro de digitacao numa URL
+     * produzia um 500.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> rotaNaoEncontrada(NoResourceFoundException e,
+                                                      HttpServletRequest req) {
+        return build(HttpStatus.NOT_FOUND, "Nao encontrado",
+                "O recurso solicitado nao existe.", req);
     }
 
     /**

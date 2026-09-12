@@ -292,4 +292,16 @@ class ContratoHttpIT {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.role").value("USUARIO_COMUM"));
     }
+
+    @Test
+    @DisplayName("404: URL que nao existe na API, e nao 500")
+    void urlInexistenteDa404() throws Exception {
+        // Antes do handler de NoResourceFoundException isto respondia 500: a
+        // requisicao caia no @ExceptionHandler(Exception.class) e o cliente era
+        // informado de uma falha do servidor quando o errado era o caminho.
+        mockMvc.perform(get("/api/rota-que-nao-existe")
+                        .header("Authorization", comoAna()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
 }
