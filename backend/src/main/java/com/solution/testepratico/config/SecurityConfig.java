@@ -73,6 +73,9 @@ public class SecurityConfig {
                 // aqui, antes de chegar ao controller.
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")
 
+                // Listagem global de enderecos, fora do contexto de um usuario.
+                .requestMatchers(HttpMethod.GET, "/api/enderecos").hasRole("ADMIN")
+
                 // Fecha por padrao: rota nova nasce protegida. O inverso
                 // (liberar tudo e proteger caso a caso) erra para o lado
                 // perigoso quando alguem esquece.
