@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: teste-pratico
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/teste_pratico}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    # O schema pertence ao Flyway. O Hibernate apenas confere, no boot, se as
+    # entidades batem com as tabelas; nunca cria nem altera nada.
+    hibernate:
+      ddl-auto: validate
+    # Padrao do Spring Boot e true. Desligado porque manter a sessao JPA aberta
+    # durante a resposta HTTP esconde problemas de lazy loading e segura conexao
+    # do pool por mais tempo que o necessario.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    # Sem valor padrao de proposito: a aplicacao NAO sobe sem o segredo vir do
+    # ambiente. Um default no repositorio seria um segredo versionado no git.
+    secret: ${JWT_SECRET}
+    expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:120}
+  cors:
+    origens: ${CORS_ORIGENS:http://localhost:5173}
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    # Nunca devolver stack trace ao cliente.
+    include-stacktrace: never
+    include-message: never
+
+logging:
+  level:
+    org.flywaydb: INFO
