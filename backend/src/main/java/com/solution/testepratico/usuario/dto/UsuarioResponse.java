@@ -4,6 +4,7 @@ import com.solution.testepratico.usuario.Role;
 import com.solution.testepratico.usuario.Usuario;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * O que sai na API. Nao existe campo de senha aqui — nao ha como vazar hash
@@ -16,6 +17,7 @@ public record UsuarioResponse(
         String nome,
         String cpf,
         String email,
+        LocalDate dataNascimento,
         Role role,
         boolean ativo,
         Instant criadoEm) {
@@ -26,6 +28,7 @@ public record UsuarioResponse(
                 usuario.getNome(),
                 usuario.getCpf(),
                 usuario.getEmail(),
+                usuario.getDataNascimento(),
                 usuario.getRole(),
                 usuario.isAtivo(),
                 usuario.getCriadoEm());

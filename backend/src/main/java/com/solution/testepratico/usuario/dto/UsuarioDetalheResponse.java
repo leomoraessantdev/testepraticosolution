@@ -5,6 +5,7 @@ import com.solution.testepratico.usuario.Role;
 import com.solution.testepratico.usuario.Usuario;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -23,6 +24,7 @@ public record UsuarioDetalheResponse(
         String nome,
         String cpf,
         String email,
+        LocalDate dataNascimento,
         Role role,
         boolean ativo,
         Instant criadoEm,
@@ -34,6 +36,7 @@ public record UsuarioDetalheResponse(
                 usuario.getNome(),
                 usuario.getCpf(),
                 usuario.getEmail(),
+                usuario.getDataNascimento(),
                 usuario.getRole(),
                 usuario.isAtivo(),
                 usuario.getCriadoEm(),
