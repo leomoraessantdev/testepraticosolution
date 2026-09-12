@@ -239,11 +239,16 @@ class EnderecoServiceIT {
     void excluirUltimoEndereco() {
         autenticarComo(bruno);
 
-        Long idUnico = enderecoRepository.findByUsuarioIdAndPrincipalTrue(bruno.getId())
-                .orElseThrow().getId();
+        // Zera o estado em vez de assumir o seed: outro teste ou uma execucao
+        // manual contra o mesmo banco pode ter mexido nos enderecos do Bruno.
+        for (var e : enderecoService.listarDoUsuario(bruno.getId())) {
+            enderecoService.excluir(bruno.getId(), e.id());
+        }
+        EnderecoResponse unico = enderecoService.criar(bruno.getId(), pedido("01001000", "1", false));
         assertThat(enderecoRepository.countByUsuarioId(bruno.getId())).isEqualTo(1);
+        assertThat(unico.principal()).isTrue();
 
-        enderecoService.excluir(bruno.getId(), idUnico);
+        enderecoService.excluir(bruno.getId(), unico.id());
 
         assertThat(enderecoRepository.countByUsuarioId(bruno.getId())).isZero();
         assertThat(enderecoRepository.findByUsuarioIdAndPrincipalTrue(bruno.getId())).isEmpty();
