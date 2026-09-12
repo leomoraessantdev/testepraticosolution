@@ -49,5 +49,4 @@ export type PaginaResponse<T> = {
   tamanho: number
   totalElementos: number
   totalPaginas: number
-  ultima: boolean
 }

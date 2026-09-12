@@ -1,20 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/auth/auth-context'
+import { Layout } from '@/componentes/Layout'
 import { RotaProtegida } from '@/componentes/RotaProtegida'
 import { Toaster } from '@/components/ui/sonner'
-import { EmBreve } from '@/paginas/EmBreve'
-import { HomePage } from '@/paginas/HomePage'
+import { CadastroPage } from '@/paginas/CadastroPage'
+import { EnderecosGlobaisPage } from '@/paginas/EnderecosGlobaisPage'
+import { Inicio } from '@/paginas/Inicio'
 import { LoginPage } from '@/paginas/LoginPage'
+import { UsuarioDetalhePage } from '@/paginas/UsuarioDetalhePage'
+import { UsuariosPage } from '@/paginas/UsuariosPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       /**
        * O padrao do React Query e 3 tentativas. Para erro de cliente isso esta
-       * errado: um 403 nao muda de resposta por insistir, e repetir tres vezes
-       * so atrasa a mensagem de erro na tela e enche o log do servidor de
-       * tentativa de acesso indevido. Repete apenas o que pode ser transitorio.
+       * errado: um 403 nao muda de resposta por insistir, so atrasa a mensagem
+       * na tela e enche o log do servidor de tentativa de acesso indevido.
+       * Repete apenas o que pode ser transitorio.
        */
       retry: (tentativas, erro: unknown) => {
         const status = (erro as { response?: { status?: number } })?.response?.status
@@ -22,8 +26,8 @@ const queryClient = new QueryClient({
         return tentativas < 2
       },
       staleTime: 30_000,
-      // O padrao refaz a consulta a cada volta de foco na janela. Com
-      // staleTime curto isso viraria rajada de requisicoes ao alternar de aba.
+      // O padrao refaz a consulta a cada volta de foco na janela. Com staleTime
+      // curto isso viraria rajada de requisicoes ao alternar de aba.
       refetchOnWindowFocus: false,
     },
   },
@@ -37,20 +41,25 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Publicas: quem ainda nao tem token precisa alcancar as duas. */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/cadastro" element={<EmBreve titulo="Cadastro de usuário" />} />
+            <Route path="/cadastro" element={<CadastroPage />} />
 
             <Route element={<RotaProtegida />}>
-              <Route path="/" element={<HomePage />} />
-              <Route
-                path="/usuarios/:id"
-                element={<EmBreve titulo="Detalhe do usuário" />}
-              />
-            </Route>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Inicio />} />
 
-            <Route element={<RotaProtegida somenteAdmin />}>
-              <Route path="/usuarios" element={<EmBreve titulo="Usuários" />} />
-              <Route path="/enderecos" element={<EmBreve titulo="Todos os endereços" />} />
+                {/* Admin em qualquer id, usuario comum no proprio. Quem tentar
+                    o id de outra pessoa recebe 403 do backend. */}
+                <Route path="/usuarios/:id" element={<UsuarioDetalhePage />} />
+
+                {/* Aninhado DENTRO do Layout: negar acesso mantem a navegacao
+                    na tela, em vez de deixar a pessoa presa numa pagina nua. */}
+                <Route element={<RotaProtegida somenteAdmin />}>
+                  <Route path="/usuarios" element={<UsuariosPage />} />
+                  <Route path="/enderecos" element={<EnderecosGlobaisPage />} />
+                </Route>
+              </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

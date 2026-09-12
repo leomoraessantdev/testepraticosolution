@@ -24,14 +24,14 @@ export function RotaProtegida({ somenteAdmin = false }: { somenteAdmin?: boolean
     // Mensagem, e nao redirect: redirecionar em silencio faz parecer bug. A
     // pessoa esta autenticada, so nao tem permissao - mesma semantica do 403.
     return (
-      <main className="mx-auto max-w-lg px-4 py-16">
+      <div className="mx-auto max-w-lg py-10">
         <Alert variant="destructive" role="alert">
           <AlertTitle>Acesso restrito</AlertTitle>
           <AlertDescription>
             Esta área é exclusiva de administradores.
           </AlertDescription>
         </Alert>
-      </main>
+      </div>
     )
   }
 
