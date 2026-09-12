@@ -37,6 +37,32 @@ services:
       CORS_ORIGENS: ${CORS_ORIGENS:-http://localhost:5173}
     ports:
       - "${API_PORT:-8080}:8080"
+    healthcheck:
+      # Depende do spring-boot-starter-actuator. Sem healthcheck o compose
+      # consideraria a API pronta assim que o processo sobe, e o web
+      # apareceria antes de o Flyway terminar.
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Vite injeta VITE_* no bundle em tempo de build. A URL e a que o
+        # NAVEGADOR usa, nao a rede interna do compose: o JavaScript roda na
+        # maquina de quem abre a pagina, entao "http://api:8080" nao resolveria.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    container_name: teste-web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # 5173 no host porque e a origem que o backend libera no CORS
+      # (CORS_ORIGENS). Dentro do container o nginx escuta na 80.
+      - "${WEB_PORT:-5173}:80"
 
 volumes:
   pgdata:
