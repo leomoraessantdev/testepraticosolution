@@ -66,11 +66,11 @@
 ## 4. ViaCEP
 
 - [ ] (INFERIDO) Integração com a API ViaCEP — `Fonte:`
-- [ ] (INFERIDO) Busca por CEP preenche os demais campos automaticamente — `Fonte:`
-- [ ] (INFERIDO) Chamada feita pelo backend (não direto do browser) — `Fonte:`
-- [ ] (INFERIDO) Tratar CEP inexistente — ViaCEP responde HTTP 200 com `{"erro": true}` — `Fonte:`
-- [ ] (INFERIDO) Tratar timeout / indisponibilidade do ViaCEP — `Fonte:`
-- [ ] (INFERIDO) Validar formato do CEP (8 dígitos) antes de chamar a API externa — `Fonte:`
+- [x] (INFERIDO) Busca por CEP preenche os demais campos automaticamente — `Fonte:`
+- [x] (INFERIDO) Chamada feita pelo backend (não direto do browser) — `Fonte:`
+- [x] (INFERIDO) Tratar CEP inexistente — ViaCEP responde HTTP 200 com `{"erro": true}` — `Fonte:`
+- [x] (INFERIDO) Tratar timeout / indisponibilidade do ViaCEP — `Fonte:`
+- [x] (INFERIDO) Validar formato do CEP (8 dígitos) antes de chamar a API externa — `Fonte:`
 - [ ] (INFERIDO) Dados retornados são persistidos junto ao endereço (snapshot) — `Fonte:`
 
 ## 5. Frontend
@@ -155,7 +155,7 @@ decisao tomada e a justificativa. Esta secao vai para o README na entrega.
 Marcacao: **[D]** decidido e ja implementado · **[P]** decidido, pendente de
 implementacao · **[?]** precisa do documento para fechar.
 
-## 1. [P] "Data Nascimento" esta nos requisitos mas some do formulario
+## 1. [D] "Data Nascimento" esta nos requisitos mas some do formulario
 
 **Contradicao do documento.** A secao de requisitos de usuario pede Data de
 Nascimento; o formulario do frontend nao mostra o campo.
@@ -242,10 +242,12 @@ dobram a superficie de ataque sem beneficio pedido.
 que foi pedido menciona historico ou auditoria de removidos. A coluna `ativo`
 ja cobre o caso "desativar sem apagar", que e diferente de excluir.
 
-## 10. [?] Existe auto-cadastro publico, ou so o admin cadastra usuarios?
+## 10. [D] Existe auto-cadastro publico, ou so o admin cadastra usuarios?
 
-Muda o desenho inteiro de rotas e telas. **Proposta**: `POST /api/usuarios`
-publico criando sempre USUARIO_COMUM. **Precisa de confirmacao no documento.**
+**Decisao: `POST /api/usuarios` publico, criando sempre USUARIO_COMUM.** Sem
+ele nao haveria como um usuario novo entrar no sistema, e o requisito de CPF
+duplicado nao teria onde acontecer. O DTO de entrada nao tem campo `role`, entao
+nao existe caminho para autopromocao. **Ainda vale confirmar no documento.**
 
 ## 11. [?] O usuario comum pode editar e excluir a propria conta?
 
@@ -257,7 +259,7 @@ publico criando sempre USUARIO_COMUM. **Precisa de confirmacao no documento.**
 uma linha e evita carregar a tabela inteira. Listagem de enderecos fica sem
 paginar: e sempre de um unico usuario, volume naturalmente pequeno.
 
-## 13. [P] Os campos preenchidos pelo ViaCEP podem ser editados depois?
+## 13. [D] Os campos preenchidos pelo ViaCEP podem ser editados depois?
 
 **Omisso.**
 

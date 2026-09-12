@@ -192,12 +192,13 @@ trace vazando nome de tabela e caminho de pacote.
 
 | Situacao | Status |
 |---|---|
-| Campo invalido (Bean Validation) | 400 |
+| Campo invalido, CPF invalido, data futura, JSON malformado | 400 |
 | Token ausente, invalido ou credenciais erradas | 401 |
 | Autenticado, sem permissao no recurso | 403 |
-| Recurso inexistente | 404 |
-| Conflito com o estado atual (violacao de constraint) | 409 |
+| Recurso inexistente, CEP nao encontrado | 404 |
+| CPF ou e-mail ja cadastrado, violacao de constraint | 409 |
 | Requisicao valida que viola regra de negocio | 422 |
+| ViaCEP fora do ar ou lento demais | 503 |
 
 **`open-in-view: false`.** O padrao do Spring Boot e `true`, o que mantem a
 sessao JPA aberta durante a resposta HTTP — esconde problemas de lazy loading e
@@ -231,6 +232,8 @@ Todos exigem `Authorization: Bearer <token>`, exceto o login.
 | Metodo | Rota | Quem pode |
 |---|---|---|
 | POST | `/api/auth/login` | publico |
+| POST | `/api/usuarios` | publico (cadastro) |
+| GET | `/api/cep/{cep}` | autenticado |
 | GET | `/api/usuarios` | ADMIN |
 | GET | `/api/usuarios/me` | proprio |
 | GET | `/api/usuarios/{id}` | proprio ou ADMIN |
@@ -245,6 +248,50 @@ Todos exigem `Authorization: Bearer <token>`, exceto o login.
 `GET /api/usuarios/{id}` devolve os dados do usuario com a lista de enderecos.
 O admin opera sobre outro usuario pelas MESMAS rotas: nao ha endpoint paralelo
 de administracao. Quem decide e o ControleAcesso dentro do service.
+
+### ViaCEP e cache
+
+A consulta passa pelo backend, nunca do navegador direto para o ViaCEP: o cache
+fica compartilhado entre usuarios, o formato de resposta fica sob nosso controle
+e casa com os campos de `Endereco`, e trocar de provedor nao exige mexer no
+frontend.
+
+Cache em memoria com Caffeine, TTL de 24h, no maximo 10.000 entradas. Nao usei
+Redis: o dado e publico, pequeno e reconstruivel com uma requisicao HTTP; subir
+um servico externo so para isso adicionaria ponto de falha sem resolver problema
+que exista aqui.
+
+Tres detalhes que fazem o cache funcionar de verdade:
+
+- **A chave e o CEP normalizado.** `01310-100` e `01310100` caem na mesma
+  entrada. Com a string crua como chave, a mesma consulta com e sem mascara
+  guardaria duas entradas e erraria o cache metade das vezes.
+- **`@Cacheable` esta no metodo publico**, nao num metodo interno chamado por
+  ele. O cache funciona por proxy: chamada de um metodo da classe para outro da
+  mesma classe nao passa pelo proxy e o cache simplesmente nao acontece.
+- **Falha nao e cacheada.** `@Cacheable` nao armazena quando o metodo lanca
+  excecao. Um ViaCEP fora do ar por um minuto nao pode deixar o CEP inacessivel
+  pelas 24 horas seguintes.
+
+Medido na API rodando: primeira consulta 807ms, segunda 7ms.
+
+**A armadilha do ViaCEP:** CEP inexistente nao devolve 404. Devolve **HTTP 200**
+com corpo `{"erro": "true"}`. Quem checa so o status code grava um endereco
+vazio achando que deu certo. O client inspeciona o corpo.
+
+**Timeouts explicitos** (3s conexao, 5s leitura). Sem eles o padrao e esperar
+para sempre: o ViaCEP travado prenderia threads do Tomcat ate esgotar o pool e
+derrubar a aplicacao inteira por causa de um preenchimento de formulario.
+
+### Validacao de data de nascimento
+
+Obrigatoria, formato ISO `aaaa-mm-dd`, nao pode ser futura (`@PastOrPresent`).
+`LocalDate` e coluna `DATE`: data de calendario nao tem hora nem fuso.
+
+Nao existe `CHECK` no banco para "nao pode ser futura": o Postgres exige funcoes
+`IMMUTABLE` em constraint e `CURRENT_DATE` e `STABLE`. Faz sentido — uma linha
+valida hoje seria reavaliada amanha com outro resultado. O banco guarda so um
+limite inferior de sanidade (`>= 1900-01-01`).
 
 ### As tres regras do endereco principal
 
@@ -263,7 +310,7 @@ valer juntos.
 
 ## Testes
 
-46 testes: 28 unitarios (`mvn test`) e 18 de integracao contra um Postgres
+67 testes: 43 unitarios (`mvn test`) e 24 de integracao contra um Postgres
 de verdade (`mvn verify`). Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
 adulterado e expirado), a regra de isolamento entre usuarios, e a conferencia
 dos hashes do seed contra as senhas documentadas.
