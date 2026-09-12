@@ -34,6 +34,20 @@ app:
   cors:
     origens: ${CORS_ORIGENS:http://localhost:5173}
 
+  viacep:
+    url: ${VIACEP_URL:https://viacep.com.br/ws}
+    # Sem timeout o padrao e esperar para sempre: o ViaCEP travado prenderia
+    # threads do Tomcat ate esgotar o pool e derrubar a aplicacao inteira.
+    timeout-conexao-ms: ${VIACEP_TIMEOUT_CONEXAO_MS:3000}
+    timeout-leitura-ms: ${VIACEP_TIMEOUT_LEITURA_MS:5000}
+
+  cache:
+    ceps:
+      # CEP muda raramente, mas muda. 24h e o meio termo entre poupar chamadas
+      # e nao servir logradouro desatualizado por semanas.
+      ttl-horas: ${CACHE_CEPS_TTL_HORAS:24}
+      tamanho-maximo: ${CACHE_CEPS_TAMANHO:10000}
+
 server:
   port: ${SERVER_PORT:8080}
   error:
