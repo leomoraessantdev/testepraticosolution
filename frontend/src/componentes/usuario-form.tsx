@@ -79,6 +79,7 @@ export function CamposUsuario({ form }: { form: UseFormReturn<FormularioUsuario>
                 {...field}
                 inputMode="numeric"
                 placeholder="000.000.000-00"
+                className="font-mono"
                 // A mascara vive so na exibicao: o que sai na requisicao sao os
                 // digitos crus, porque o banco guarda sem mascara.
                 onChange={(e) => field.onChange(mascararCpf(e.target.value))}

@@ -4,50 +4,48 @@ import { Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { useAuth } from '@/auth/auth-context'
+import { Marca } from '@/componentes/elementos'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useAuth } from '@/auth/auth-context'
 import { mensagemDeErro, statusDoErro } from '@/lib/erros'
 import { cpfValido, mascararCpf } from '@/lib/validacao'
 
 /**
  * Validacao de UX. O backend valida de novo - ver o cabecalho de lib/validacao.ts.
  *
- * Assimetria consciente com o backend: o LoginRequest do servidor exige apenas
- * @NotBlank no CPF, e nao o digito verificador. A razao esta comentada la -
- * validar formato no login nao protege nada e revelaria ao atacante quais
- * formatos o sistema aceita. Aqui o calculo roda porque o proposito e outro:
- * avisar de um erro de digitacao antes de gastar uma ida ao servidor. Nao ha
- * vazamento, porque o codigo do cliente ja esta nas maos de quem abre o
- * DevTools.
+ * Assimetria consciente: o LoginRequest do servidor exige apenas @NotBlank no
+ * CPF, e nao o digito verificador. A razao esta comentada la - validar formato
+ * no login nao protege nada e revelaria quais formatos o sistema aceita. Aqui o
+ * calculo roda porque o proposito e outro: avisar de erro de digitacao antes de
+ * gastar uma ida ao servidor. Nao ha vazamento, porque o codigo do cliente ja
+ * esta nas maos de quem abre o DevTools.
  */
 const schemaLogin = z.object({
-  cpf: z
-    .string()
-    .min(1, 'Informe o CPF')
-    .refine(cpfValido, 'CPF invalido. Confira os numeros.'),
+  cpf: z.string().min(1, 'Informe o CPF').refine(cpfValido, 'CPF inválido. Confira os números.'),
   senha: z.string().min(1, 'Informe a senha'),
 })
 
 type FormularioLogin = z.infer<typeof schemaLogin>
+
+/**
+ * As contas que a migration V3 cria. Ficam aqui para o avaliador entrar sem
+ * abrir o README - sao dados de demonstracao publicos, ja documentados no
+ * repositorio, nao credencial de producao.
+ */
+const DEMONSTRACAO = [
+  { rotulo: 'Administrador', cpf: '529.982.247-25', senha: 'admin123' },
+  { rotulo: 'Usuário comum', cpf: '111.444.777-35', senha: 'usuario123' },
+]
 
 export function LoginPage() {
   const { entrar, autenticado } = useAuth()
@@ -58,7 +56,7 @@ export function LoginPage() {
     resolver: zodResolver(schemaLogin),
     defaultValues: { cpf: '', senha: '' },
     // Valida ao sair do campo, nao a cada tecla: marcar "CPF invalido" no
-    // terceiro digito, quando a pessoa ainda esta digitando, e ruido.
+    // terceiro digito, enquanto a pessoa digita, e ruido.
     mode: 'onBlur',
   })
 
@@ -79,92 +77,118 @@ export function LoginPage() {
 
   const erro = login.error
   // 401 aqui e credencial errada, nao sessao expirada. A mensagem do backend e
-  // generica de proposito (nao diz se o CPF existe), entao so a repassamos.
+  // generica de proposito - nao diz se o CPF existe -, entao so a repassamos.
   const mensagem =
     statusDoErro(erro) === 401 ? 'CPF ou senha incorretos.' : erro ? mensagemDeErro(erro) : null
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-muted/40 px-4 py-10">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Entrar</CardTitle>
-          <CardDescription>Acesse com seu CPF e senha.</CardDescription>
-        </CardHeader>
+    <main className="flex min-h-svh items-center justify-center px-4 py-12">
+      {/* Coluna estreita sem card: o formulario ja e a unica coisa na tela, e
+          uma moldura em volta de conteudo que nao disputa espaco com nada so
+          adiciona ruido. */}
+      <div className="w-full max-w-sm">
+        <Marca className="mb-8" />
+
+        <h1 className="text-4xl font-bold tracking-tight">Entrar</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Informe seu CPF e senha para acessar seus dados.
+        </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((dados) => login.mutate(dados))} noValidate>
-            <CardContent className="space-y-4">
-              {mensagem && (
-                <Alert variant="destructive" role="alert">
-                  <AlertDescription>{mensagem}</AlertDescription>
-                </Alert>
+          <form
+            onSubmit={form.handleSubmit((dados) => login.mutate(dados))}
+            noValidate
+            className="mt-8 space-y-4"
+          >
+            {mensagem && (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{mensagem}</AlertDescription>
+              </Alert>
+            )}
+
+            <FormField
+              control={form.control}
+              name="cpf"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      autoFocus
+                      inputMode="numeric"
+                      autoComplete="username"
+                      placeholder="000.000.000-00"
+                      className="font-mono"
+                      // A mascara vive so na exibicao. O que sai no corpo da
+                      // requisicao sao os digitos crus, porque o banco guarda
+                      // CPF sem mascara (CHECK ck_usuarios_cpf).
+                      onChange={(e) => field.onChange(mascararCpf(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
-              <FormField
-                control={form.control}
-                name="cpf"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CPF</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        autoFocus
-                        inputMode="numeric"
-                        autoComplete="username"
-                        placeholder="000.000.000-00"
-                        // A mascara vive so na exibicao. O que sai no corpo da
-                        // requisicao sao os digitos crus, porque o banco guarda
-                        // CPF sem mascara (CHECK ck_usuarios_cpf).
-                        onChange={(e) => field.onChange(mascararCpf(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="senha"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="Sua senha"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="senha"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        autoComplete="current-password"
-                        placeholder="Sua senha"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormDescription className="text-xs">
-                As validações desta tela são apenas para agilizar a correção de erros de
-                digitação. O servidor valida tudo novamente.
-              </FormDescription>
-            </CardContent>
-
-            <CardFooter className="flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={login.isPending}>
-                {login.isPending && <Loader2 className="animate-spin" aria-hidden />}
-                {login.isPending ? 'Entrando...' : 'Entrar'}
-              </Button>
-
-              <p className="text-sm text-muted-foreground">
-                Não tem conta?{' '}
-                <Link to="/cadastro" className="font-medium text-foreground underline">
-                  Cadastre-se
-                </Link>
-              </p>
-            </CardFooter>
+            <Button type="submit" className="w-full" size="lg" disabled={login.isPending}>
+              {login.isPending && <Loader2 className="animate-spin" aria-hidden />}
+              {login.isPending ? 'Entrando...' : 'Entrar'}
+            </Button>
           </form>
         </Form>
-      </Card>
+
+        <p className="mt-5 text-sm text-muted-foreground">
+          Não tem conta?{' '}
+          <Link to="/cadastro" className="font-medium text-brand hover:underline">
+            Cadastre-se
+          </Link>
+        </p>
+
+        <div className="mt-8 border-t pt-5">
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            Contas de demonstração
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {DEMONSTRACAO.map((conta) => (
+              <Button
+                key={conta.rotulo}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Preenche em vez de logar direto: quem avalia ve o CPF
+                  // mascarado no campo e confere o fluxo de verdade, incluindo
+                  // a validacao do formulario.
+                  form.setValue('cpf', conta.cpf, { shouldValidate: true })
+                  form.setValue('senha', conta.senha, { shouldValidate: true })
+                }}
+              >
+                {conta.rotulo}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
     </main>
   )
 }

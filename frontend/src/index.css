@@ -15,7 +15,7 @@
 :root {
   --radius: 0.625rem;
 
-  --background: oklch(1 0 0);
+  --background: oklch(0.977 0.005 247.9);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
@@ -34,6 +34,14 @@
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
   --ring: oklch(0.704 0.04 256.788);
+
+  /* Azul de marca. O shadcn base slate nao traz um acento cromatico: o
+     --primary e quase preto e o --accent e um cinza. Estes tokens dao o azul
+     do indicador de aba, do badge Principal e dos links. */
+  --brand: oklch(0.546 0.215 262.881);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-soft: oklch(0.962 0.031 258.4);
+  --brand-border: oklch(0.882 0.059 254.1);
 }
 
 .dark {
@@ -56,6 +64,10 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.551 0.027 264.364);
+  --brand: oklch(0.707 0.165 254.6);
+  --brand-foreground: oklch(0.129 0.042 264.695);
+  --brand-soft: oklch(0.279 0.056 260.0);
+  --brand-border: oklch(0.4 0.09 258.0);
 }
 
 @theme inline {
@@ -83,6 +95,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
 }
 
 @layer base {

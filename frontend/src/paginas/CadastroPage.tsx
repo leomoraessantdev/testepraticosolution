@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCriarUsuario } from '@/api/usuarios'
 import { useAuth } from '@/auth/auth-context'
+import { Marca } from '@/componentes/elementos'
 import {
   CamposUsuario,
   schemaUsuario,
@@ -13,14 +14,6 @@ import {
 } from '@/componentes/usuario-form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Form } from '@/components/ui/form'
 import { camposInvalidos, mensagemDeErro } from '@/lib/erros'
 
@@ -39,8 +32,6 @@ export function CadastroPage() {
   const form = useForm<FormularioUsuario>({
     resolver: zodResolver(schemaUsuario),
     defaultValues: VALORES_VAZIOS,
-    // Valida ao sair do campo, nao a cada tecla: marcar "CPF invalido" no
-    // terceiro digito, enquanto a pessoa digita, e ruido.
     mode: 'onBlur',
   })
 
@@ -71,40 +62,39 @@ export function CadastroPage() {
   const mensagem = erro && !temErroDeCampo ? mensagemDeErro(erro) : null
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-muted/40 px-4 py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Criar conta</CardTitle>
-          <CardDescription>Preencha seus dados para se cadastrar.</CardDescription>
-        </CardHeader>
+    <main className="flex min-h-svh items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <Marca className="mb-8" />
+
+        <h1 className="text-4xl font-bold tracking-tight">Criar conta</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Preencha seus dados para se cadastrar.
+        </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(enviar)} noValidate>
-            <CardContent className="space-y-4">
-              {mensagem && (
-                <Alert variant="destructive" role="alert">
-                  <AlertDescription>{mensagem}</AlertDescription>
-                </Alert>
-              )}
+          <form onSubmit={form.handleSubmit(enviar)} noValidate className="mt-8 space-y-4">
+            {mensagem && (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{mensagem}</AlertDescription>
+              </Alert>
+            )}
 
-              <CamposUsuario form={form} />
-            </CardContent>
+            <CamposUsuario form={form} />
 
-            <CardFooter className="flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={criar.isPending}>
-                {criar.isPending && <Loader2 className="animate-spin" aria-hidden />}
-                {criar.isPending ? 'Cadastrando...' : 'Cadastrar'}
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                Já tem conta?{' '}
-                <Link to="/login" className="font-medium text-foreground underline">
-                  Entrar
-                </Link>
-              </p>
-            </CardFooter>
+            <Button type="submit" className="w-full" size="lg" disabled={criar.isPending}>
+              {criar.isPending && <Loader2 className="animate-spin" aria-hidden />}
+              {criar.isPending ? 'Cadastrando...' : 'Cadastrar'}
+            </Button>
           </form>
         </Form>
-      </Card>
+
+        <p className="mt-5 text-sm text-muted-foreground">
+          Já tem conta?{' '}
+          <Link to="/login" className="font-medium text-brand hover:underline">
+            Entrar
+          </Link>
+        </p>
+      </div>
     </main>
   )
 }

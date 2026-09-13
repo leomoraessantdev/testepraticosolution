@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UsuarioService {
@@ -65,7 +66,9 @@ public class UsuarioService {
                 passwordEncoder.encode(request.senha()),
                 Role.USUARIO_COMUM);
 
-        return UsuarioResponse.de(usuarioRepository.save(usuario));
+        // Usuario recem-criado nao tem endereco: a contagem e zero por definicao,
+        // sem precisar consultar o banco para descobrir isso.
+        return UsuarioResponse.de(usuarioRepository.save(usuario), 0L);
     }
 
     /**
@@ -104,6 +107,15 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponse> listarTodos() {
         controleAcesso.exigirAdmin();
-        return usuarioRepository.findAll().stream().map(UsuarioResponse::de).toList();
+        Map<Long, Long> enderecosPorUsuario = enderecoService.contarEnderecosPorUsuario();
+
+        // Duas consultas no total: uma para os usuarios, uma agregada para as
+        // contagens. Nunca uma por usuario - e o ponto da consulta com GROUP BY.
+        return usuarioRepository.findAll().stream()
+                .map(usuario -> UsuarioResponse.de(
+                        usuario,
+                        // Quem nao tem endereco nao aparece na agregacao.
+                        enderecosPorUsuario.getOrDefault(usuario.getId(), 0L)))
+                .toList();
     }
 }

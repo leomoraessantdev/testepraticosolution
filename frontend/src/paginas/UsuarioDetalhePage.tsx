@@ -1,10 +1,17 @@
-import { AlertCircle, MapPin, Plus, Star, Trash2 } from 'lucide-react'
+import { AlertCircle, MapPin, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useDefinirPrincipal, useExcluirEndereco } from '@/api/enderecos'
 import { useUsuario } from '@/api/usuarios'
 import { useAuth } from '@/auth/auth-context'
+import {
+  Avatar,
+  CabecalhoPagina,
+  ChipCep,
+  Dado,
+  PerfilBadge,
+} from '@/componentes/elementos'
 import { EnderecoFormDialog } from '@/componentes/EnderecoFormDialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -17,14 +24,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { mensagemDeErro } from '@/lib/erros'
 import { enderecoEmUmaLinha, formatarCep, formatarCpf, formatarData } from '@/lib/formato'
+import { cn } from '@/lib/utils'
 import type { EnderecoResponse } from '@/tipos'
+
+/** Segunda linha do endereco: complemento, bairro, cidade/UF. */
+function detalhe(e: EnderecoResponse): string {
+  const partes = [e.complemento, `${e.bairro}, ${e.cidade}/${e.uf}`].filter(Boolean)
+  return partes.join(' · ')
+}
 
 /**
  * Dados do usuario e a lista de enderecos dele, com as acoes de endereco.
@@ -40,7 +51,7 @@ import type { EnderecoResponse } from '@/tipos'
 export function UsuarioDetalhePage() {
   const { id } = useParams<{ id: string }>()
   const usuarioId = id ? Number(id) : undefined
-  const { sessao, ehAdmin } = useAuth()
+  const { sessao } = useAuth()
 
   const { data: usuario, isPending, error } = useUsuario(usuarioId)
 
@@ -93,9 +104,9 @@ export function UsuarioDetalhePage() {
 
   if (isPending || !usuario) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80 rounded-xl" />
       </div>
     )
   }
@@ -103,130 +114,136 @@ export function UsuarioDetalhePage() {
   const enderecos = usuario.enderecos
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <CardTitle>{usuario.nome}</CardTitle>
-              <CardDescription>
-                {souEu ? 'Seus dados' : 'Dados do usuário'}
-              </CardDescription>
-            </div>
-            <Badge variant={usuario.role === 'ADMIN' ? 'default' : 'secondary'}>
-              {usuario.role === 'ADMIN' ? 'Administrador' : 'Usuário comum'}
-            </Badge>
+    <>
+      <CabecalhoPagina
+        titulo={usuario.nome}
+        subtitulo={souEu ? 'Seus dados e endereços cadastrados' : 'Dados e endereços cadastrados'}
+        acao={
+          <Button onClick={abrirNovo}>
+            <Plus className="size-4" aria-hidden />
+            Novo endereço
+          </Button>
+        }
+      />
+
+      {/* Coluna fixa para o perfil, o resto para os enderecos. Abaixo de lg
+          vira uma coluna so - o perfil e curto e nao vale espremer ao lado de
+          linhas que ja disputam largura. */}
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <section className="h-fit rounded-xl border bg-card p-6">
+          <Avatar nome={usuario.nome} className="size-14 rounded-2xl text-base" />
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <h2 className="font-semibold">{usuario.nome}</h2>
+            <PerfilBadge role={usuario.role} />
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Grade de uma coluna no telefone, duas a partir de sm. */}
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-sm text-muted-foreground">CPF</dt>
-              <dd className="font-medium">{formatarCpf(usuario.cpf)}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted-foreground">Data de nascimento</dt>
-              <dd className="font-medium">{formatarData(usuario.dataNascimento)}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-sm text-muted-foreground">E-mail</dt>
-              <dd className="font-medium break-all">{usuario.email}</dd>
-            </div>
+
+          <dl className="mt-5 space-y-4">
+            <Dado rotulo="CPF" mono>
+              {formatarCpf(usuario.cpf)}
+            </Dado>
+            <Dado rotulo="Data de nascimento" mono>
+              {formatarData(usuario.dataNascimento)}
+            </Dado>
+            <Dado rotulo="E-mail">{usuario.email}</Dado>
           </dl>
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <CardTitle>Endereços</CardTitle>
-              <CardDescription>
-                {enderecos.length === 0
-                  ? 'Nenhum endereço cadastrado'
-                  : `${enderecos.length} endereço(s) · apenas um pode ser o principal`}
-              </CardDescription>
-            </div>
-            <Button onClick={abrirNovo} size="sm">
-              <Plus className="size-4" aria-hidden />
-              Novo endereço
-            </Button>
-          </div>
-        </CardHeader>
+        <section className="overflow-hidden rounded-xl border bg-card">
+          <header className="flex items-center justify-between gap-3 border-b px-5 py-4">
+            <h2 className="font-semibold">Endereços</h2>
+            <span className="text-sm text-muted-foreground">
+              {enderecos.length} endereço{enderecos.length === 1 ? '' : 's'}
+            </span>
+          </header>
 
-        <CardContent>
-          {enderecos.length === 0 && (
-            <div className="flex flex-col items-center gap-3 py-10 text-center">
+          {enderecos.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
               <MapPin className="size-8 text-muted-foreground" aria-hidden />
               <p className="text-sm text-muted-foreground">
-                Cadastre o primeiro endereço. Ele será o principal automaticamente.
+                Nenhum endereço cadastrado. O primeiro será o principal automaticamente.
               </p>
+              <Button variant="outline" size="sm" onClick={abrirNovo}>
+                <Plus className="size-4" aria-hidden />
+                Novo endereço
+              </Button>
             </div>
-          )}
-
-          <ul className="divide-y">
-            {enderecos.map((e) => (
-              <li key={e.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{formatarCep(e.cep)}</span>
-                    {e.principal && (
-                      <Badge>
-                        <Star className="size-3" aria-hidden />
-                        Principal
-                      </Badge>
+          ) : (
+            <ul className="divide-y">
+              {enderecos.map((e) => (
+                <li key={e.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+                  {/* O ponto marca o principal sem depender so do selo: na
+                      varredura vertical da lista, a cor na margem e mais rapida
+                      de achar do que ler o texto de cada linha. */}
+                  <span
+                    className={cn(
+                      'mt-1.5 size-2 shrink-0 rounded-full sm:mt-0',
+                      e.principal ? 'bg-brand' : 'bg-border',
                     )}
+                    aria-hidden
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium break-words">
+                        {e.logradouro}, {e.numero}
+                      </span>
+                      {e.principal && (
+                        <span className="inline-flex items-center rounded-full border border-brand-border bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">
+                          Principal
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{detalhe(e)}</p>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{enderecoEmUmaLinha(e)}</p>
-                </div>
 
-                {/* Empilha no telefone, alinha em linha a partir de sm. */}
-                <div className="flex flex-wrap gap-2">
-                  {!e.principal && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={definirPrincipal.isPending}
-                      onClick={() =>
-                        definirPrincipal.mutate(e.id, {
-                          onSuccess: () =>
-                            toast.success('Endereço principal atualizado. O anterior deixou de ser.'),
-                          onError: (erro) => toast.error(mensagemDeErro(erro)),
-                        })
-                      }
-                    >
-                      <Star className="size-4" aria-hidden />
-                      Tornar principal
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <ChipCep>{formatarCep(e.cep)}</ChipCep>
+
+                    {!e.principal && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={definirPrincipal.isPending}
+                        onClick={() =>
+                          definirPrincipal.mutate(e.id, {
+                            onSuccess: () =>
+                              toast.success('Endereço principal atualizado. O anterior deixou de ser.'),
+                            onError: (erro) => toast.error(mensagemDeErro(erro)),
+                          })
+                        }
+                      >
+                        Tornar principal
+                      </Button>
+                    )}
+
+                    <Button variant="ghost" size="sm" onClick={() => abrirEdicao(e)}>
+                      Editar
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => abrirEdicao(e)}>
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => setAExcluir(e)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                    Excluir
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {ehAdmin && !souEu && enderecos.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <p className="text-xs text-muted-foreground">
-                Você está editando os endereços de outro usuário como administrador.
-              </p>
-            </>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setAExcluir(e)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </CardContent>
-      </Card>
+
+          {enderecos.length > 0 && (
+            /* A regra escrita onde ela acontece. O usuario descobre o
+               comportamento antes de clicar, e nao por um toast depois. */
+            <p className="border-t px-5 py-3 text-sm text-muted-foreground">
+              Apenas um endereço pode ser o principal. Ao definir outro, o anterior deixa de ser
+              automaticamente.
+            </p>
+          )}
+        </section>
+      </div>
 
       {usuarioId !== undefined && (
         /* key remonta o formulario ao trocar entre "novo" e "editar", para o
@@ -278,6 +295,6 @@ export function UsuarioDetalhePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }

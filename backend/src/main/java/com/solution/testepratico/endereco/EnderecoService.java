@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Onde vivem as tres regras de negocio de endereco.
@@ -67,6 +70,24 @@ public class EnderecoService {
     public EnderecoResponse buscar(Long usuarioId, Long enderecoId) {
         controleAcesso.exigirAcessoAoUsuario(usuarioId);
         return EnderecoResponse.de(carregarDoUsuario(usuarioId, enderecoId));
+    }
+
+    /**
+     * Quantos enderecos cada usuario tem, para a listagem do administrador.
+     *
+     * Sem checagem de acesso propria: e composicao interna, e quem chama
+     * (UsuarioService.listarTodos) ja exigiu ADMIN antes. Nao ha endpoint que
+     * alcance este metodo diretamente.
+     *
+     * Usuario sem endereco nao vem na consulta agregada, entao o mapa nao tem a
+     * chave dele - por isso quem le usa getOrDefault com zero.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> contarEnderecosPorUsuario() {
+        return enderecoRepository.contarPorUsuario().stream()
+                .collect(Collectors.toMap(
+                        EnderecoRepository.ContagemDeEnderecos::getUsuarioId,
+                        EnderecoRepository.ContagemDeEnderecos::getTotal));
     }
 
     /** Listagem global de enderecos do sistema. Restrita a ADMIN. */

@@ -20,9 +20,15 @@ public record UsuarioResponse(
         LocalDate dataNascimento,
         Role role,
         boolean ativo,
-        Instant criadoEm) {
+        Instant criadoEm,
+        long totalEnderecos) {
 
-    public static UsuarioResponse de(Usuario usuario) {
+    /**
+     * A contagem vem de fora porque nao esta na entidade: carrega-la por
+     * usuario, aqui dentro, seria exatamente o N+1 que a consulta agregada do
+     * EnderecoRepository existe para evitar.
+     */
+    public static UsuarioResponse de(Usuario usuario, long totalEnderecos) {
         return new UsuarioResponse(
                 usuario.getId(),
                 usuario.getNome(),
@@ -31,6 +37,7 @@ public record UsuarioResponse(
                 usuario.getDataNascimento(),
                 usuario.getRole(),
                 usuario.isAtivo(),
-                usuario.getCriadoEm());
+                usuario.getCriadoEm(),
+                totalEnderecos);
     }
 }

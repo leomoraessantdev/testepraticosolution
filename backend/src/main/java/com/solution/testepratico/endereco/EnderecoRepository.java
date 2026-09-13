@@ -67,6 +67,28 @@ public interface EnderecoRepository extends JpaRepository<Endereco, Long> {
      * desatualizado. Consequencia pratica: qualquer entidade carregada ANTES
      * desta chamada fica destacada, entao o codigo sempre carrega depois.
      */
+    /**
+     * Quantos enderecos cada usuario tem, em UMA consulta agregada.
+     *
+     * Existe para a listagem do admin mostrar a contagem por linha. A forma
+     * ingenua - chamar countByUsuarioId dentro do laco que monta a lista - seria
+     * um N+1 classico: 3 usuarios viram 4 consultas, 500 usuarios viram 501. O
+     * GROUP BY resolve com uma so, independente do numero de usuarios.
+     *
+     * Usuario SEM endereco nao aparece no resultado, porque a agregacao parte da
+     * tabela de enderecos. Quem consome trata a ausencia como zero.
+     */
+    @Query("SELECT e.usuario.id AS usuarioId, COUNT(e) AS total "
+         + "FROM Endereco e GROUP BY e.usuario.id")
+    List<ContagemDeEnderecos> contarPorUsuario();
+
+    /** Projecao da consulta agregada acima. */
+    interface ContagemDeEnderecos {
+        Long getUsuarioId();
+
+        long getTotal();
+    }
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Endereco e SET e.principal = false "
          + "WHERE e.usuario.id = :usuarioId AND e.principal = true")

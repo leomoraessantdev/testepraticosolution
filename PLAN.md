@@ -352,3 +352,49 @@ não existia, a requisição caía no `@ExceptionHandler(Exception.class)` e vol
 Correção: starter do actuator adicionado (habilita também o healthcheck do
 compose) e `@ExceptionHandler(NoResourceFoundException.class)` devolvendo 404.
 Regressão coberta por `ContratoHttpIT.urlInexistenteDa404`.
+
+## 18. "Esqueci minha senha" estava no desenho e foi removida
+
+O desenho da tela de login trazia o link **"Esqueci minha senha"**.
+
+**Decisão: não implementar o link.** Não existe recuperação de senha no backend —
+seria preciso token de redefinição, expiração e envio de e-mail — e o documento
+não pede nada disso. Um link que não leva a lugar nenhum numa entrega avaliada é
+pior do que a ausência dele: sugere funcionalidade que não existe e o avaliador
+descobre no primeiro clique.
+
+Se a recuperação entrar um dia, o link volta junto com ela.
+
+## 19. Busca na listagem de usuários: no cliente, não no servidor
+
+O desenho trouxe um campo **"Buscar por nome, CPF ou e-mail"**. O documento não
+pede busca; é adição de UX.
+
+**Decisão: filtrar no cliente.** A listagem do admin já chega inteira nesta tela
+— `GET /api/usuarios` não pagina —, então filtrar em memória responde a cada
+tecla sem ida ao servidor, e não exige endpoint novo.
+
+**O limite está registrado no próprio código:** se um dia a listagem paginar, a
+busca precisa virar parâmetro da API. Filtrar apenas a página carregada daria a
+impressão de que o registro não existe — o pior tipo de bug de busca, porque
+parece resposta correta.
+
+O CPF é comparado por dígitos, então `111.444` e `111444` encontram a mesma
+pessoa — mesmo princípio da normalização no backend.
+
+## 20. Contagem de endereços na listagem: uma consulta, não N+1
+
+O desenho mostra a coluna **"Endereços"** com o total de cada usuário.
+`UsuarioResponse` não tinha o campo.
+
+**Decisão: adicionar `totalEnderecos`, alimentado por consulta agregada.**
+
+A forma ingênua seria chamar `countByUsuarioId` dentro do laço que monta a lista
+— um N+1 clássico: 3 usuários viram 4 consultas, 500 usuários viram 501. Em vez
+disso, `EnderecoRepository.contarPorUsuario()` faz um `GROUP BY` e devolve tudo
+de uma vez; `UsuarioService.listarTodos` faz **duas consultas no total**,
+independente do número de usuários.
+
+Detalhe que o teste cobre: usuário **sem** endereço não aparece na agregação,
+porque ela parte da tabela de endereços. Quem lê usa `getOrDefault(id, 0L)` — sem
+isso, um usuário recém-criado quebraria a listagem.

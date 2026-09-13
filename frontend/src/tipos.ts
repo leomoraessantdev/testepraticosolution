@@ -22,6 +22,8 @@ export type UsuarioResponse = {
   role: Role
   ativo: boolean
   criadoEm: string
+  /** Contagem agregada, calculada no backend sem N+1. */
+  totalEnderecos: number
 }
 
 /** GET /api/usuarios/{id}/enderecos */

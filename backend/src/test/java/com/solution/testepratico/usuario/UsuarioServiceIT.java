@@ -8,7 +8,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.solution.testepratico.seguranca.UsuarioAutenticado;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,5 +141,34 @@ class UsuarioServiceIT {
         usuarioService.criar(pedido("123.456.789-09", "livre@exemplo.com"));
 
         assertThat(usuarioRepository.existsByCpf(CPF_LIVRE)).isTrue();
+    }
+
+    @Test
+    @DisplayName("a listagem traz a contagem de enderecos de cada usuario")
+    void listagemTrazContagemDeEnderecos() {
+        var admin = usuarioRepository.findByCpf("52998224725").orElseThrow();
+        var principal = new UsuarioAutenticado(admin.getId(), admin.getCpf(), admin.getRole());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+        try {
+            usuarioService.criar(pedido(CPF_LIVRE, "livre@exemplo.com"));
+
+            var lista = usuarioService.listarTodos();
+
+            // Os tres do seed tem dois enderecos cada (V3 + V5).
+            assertThat(lista)
+                    .filteredOn(u -> !u.cpf().equals(CPF_LIVRE))
+                    .allSatisfy(u -> assertThat(u.totalEnderecos()).isEqualTo(2));
+
+            // Quem acabou de ser criado nao tem endereco. Este e o caso que a
+            // consulta agregada NAO devolve, e que so funciona porque o service
+            // trata a ausencia como zero em vez de estourar.
+            assertThat(lista)
+                    .filteredOn(u -> u.cpf().equals(CPF_LIVRE))
+                    .singleElement()
+                    .satisfies(u -> assertThat(u.totalEnderecos()).isZero());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }
