@@ -81,6 +81,73 @@ curl -X POST http://localhost:8080/api/auth/login \
 curl http://localhost:8080/api/usuarios -H "Authorization: Bearer SEU_TOKEN"
 ```
 
+### Rodar sem Docker
+
+Requisitos: **Java 21**, **Node 20+** e um **PostgreSQL 16** no ar. Maven nao
+precisa estar instalado — o projeto traz o wrapper.
+
+```bash
+# 1. Banco
+psql -U postgres -c "CREATE DATABASE teste_pratico;"
+
+# 2. Backend (o Flyway cria schema e seed no primeiro boot)
+cd backend
+export JWT_SECRET="troque-por-um-segredo-aleatorio-de-48-bytes"
+./mvnw spring-boot:run            # Windows: mvnw.cmd spring-boot:run
+
+# 3. Frontend, em outro terminal
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+`JWT_SECRET` e a **unica variavel obrigatoria**: ela nao tem valor padrao de
+proposito, entao a aplicacao recusa subir sem ela. O resto tem padrao apontando
+para `localhost` — se o seu Postgres usa outra porta, usuario ou senha, exporte
+`DB_URL`, `DB_USER` e `DB_PASSWORD` (tabela na proxima secao).
+
+---
+
+## Variaveis de ambiente
+
+Copie `.env.example` para `.env` na raiz; o Compose le esse arquivo. Rodando sem
+Docker, exporte no ambiente ou passe com `-D` ao Maven.
+
+**Lidas pelo backend** (`application.yml`):
+
+| Variavel | Padrao | Para que serve |
+|---|---|---|
+| `JWT_SECRET` | **sem padrao** | Segredo HMAC do token. Sem valor default de proposito: um default no repositorio seria um segredo versionado no git, e a aplicacao nao sobe sem ele |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/teste_pratico` | JDBC do Postgres |
+| `DB_USER` | `postgres` | Usuario do banco |
+| `DB_PASSWORD` | `postgres` | Senha do banco |
+| `JWT_EXPIRACAO_MINUTOS` | `120` | Validade do token |
+| `CORS_ORIGENS` | `http://localhost:5173` | Origens liberadas. Lista separada por virgula |
+| `VIACEP_URL` | `https://viacep.com.br/ws` | Base da API externa |
+| `VIACEP_TIMEOUT_CONEXAO_MS` | `3000` | Sem timeout o padrao e esperar para sempre |
+| `VIACEP_TIMEOUT_LEITURA_MS` | `5000` | idem |
+| `CACHE_CEPS_TTL_HORAS` | `24` | Validade da entrada no cache de CEP |
+| `CACHE_CEPS_TAMANHO` | `10000` | Teto de entradas do cache |
+| `SERVER_PORT` | `8080` | Porta da API |
+
+**Usadas so pelo Docker Compose** (nao existem no `application.yml`):
+
+| Variavel | Padrao | Para que serve |
+|---|---|---|
+| `DB_NAME` | `teste_pratico` | Nome do banco criado pelo container do Postgres |
+| `DB_PORT` | `5432` | Porta do Postgres no host |
+| `API_PORT` | `8080` | Porta da API no host |
+| `WEB_PORT` | `5173` | Porta do frontend no host. **Precisa casar com `CORS_ORIGENS`** |
+
+**Frontend** (`frontend/.env`):
+
+| Variavel | Padrao | Para que serve |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8080` | URL da API. O Vite injeta `VITE_*` no bundle em tempo de **build**, nao de execucao: trocar depois de construir a imagem nao tem efeito. E a URL que o **navegador** usa, entao `http://api:8080` nao funcionaria |
+
+---
+
 ### Rodar em modo de desenvolvimento
 
 O compose serve o frontend ja construido. Para mexer nele com recarga
