@@ -4,7 +4,7 @@ Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
 > **Status:** backend e frontend implementados e verificados contra o
-> enunciado. **131 testes automatizados** — 90 no backend (`mvn verify`) e 41
+> enunciado. **132 testes automatizados** — 91 no backend (`mvn verify`) e 41
 > no frontend (`npm test`).
 >
 > O checklist item por item, com citacao literal do documento, esta em
@@ -48,7 +48,7 @@ docker compose down -v && docker compose up --build
 
 ### Credenciais iniciais
 
-Criadas pelas migrations `V3`, `V5` e `V6` (usuarios, segundo endereco e acentuacao).
+Criadas pelas migrations `V3`, `V5` e `V6` (usuarios, segundo endereco, acentuacao).
 **Login e por CPF.**
 
 Os tres usuarios do seed tem **dois enderecos cada, exatamente um principal** —
@@ -264,8 +264,8 @@ com justificativas, esta em [PLAN.md](PLAN.md). Os principais:
 | Como nasce o primeiro admin? | Migration de seed, com credenciais documentadas acima |
 | CPF/CEP com ou sem mascara no banco | Sem mascara, com `CHECK` de formato |
 | 403 ou 404 ao pedir recurso de outro usuario | 403 na rota de outro; 404 para id alheio na propria rota |
-| E-mail nao aparece no enunciado, mas o backend exige | Mantido como campo extra. **Nao e exigencia do teste, e escolha minha** — reverter e uma migration |
-| "Pode excluir enderecos" so aparece na lista do Administrador | O usuario comum tambem exclui os proprios. Risco assumido e registrado; reverter e uma linha |
+| E-mail nao aparece no enunciado | **Removido** (migration V7). O cadastro tem exatamente os quatro campos que o documento lista |
+| "Pode excluir enderecos" so aparece na lista do Administrador | **Só o admin exclui.** O usuario comum cadastra, edita e define o principal, mas nao apaga |
 
 ---
 
@@ -354,9 +354,9 @@ valer juntos.
 
 ## Testes
 
-**131 testes: 90 no backend e 41 no frontend.**
+**132 testes: 91 no backend e 41 no frontend.**
 
-No backend sao 43 unitarios e 47 de integracao contra um Postgres de verdade.
+No backend sao 42 unitarios e 49 de integracao contra um Postgres de verdade.
 
 **Rode `mvn verify`, nao `mvn test`.** O Surefire roda apenas os `*Test`; os
 `*IT` — onde vivem as regras de negocio — sao do Failsafe, na fase `verify`.

@@ -106,11 +106,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Conflito", e.getMessage(), req);
     }
 
-    @ExceptionHandler(EmailDuplicadoException.class)
-    public ResponseEntity<ApiError> emailDuplicado(EmailDuplicadoException e, HttpServletRequest req) {
-        return build(HttpStatus.CONFLICT, "Conflito", e.getMessage(), req);
-    }
-
     // ---------- Requisicao malformada ----------
 
     /**

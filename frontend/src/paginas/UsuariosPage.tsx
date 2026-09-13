@@ -41,8 +41,7 @@ function filtrar(usuarios: UsuarioResponse[], busca: string): UsuarioResponse[] 
   const digitos = somenteDigitos(termo)
 
   return usuarios.filter((u) => {
-    const porTexto =
-      u.nome.toLowerCase().includes(termo) || u.email.toLowerCase().includes(termo)
+    const porTexto = u.nome.toLowerCase().includes(termo)
     const porCpf = digitos.length > 0 && u.cpf.includes(digitos)
     return porTexto || porCpf
   })
@@ -92,7 +91,7 @@ export function UsuariosPage() {
                 type="search"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por nome, CPF ou e-mail"
+                placeholder="Buscar por nome ou CPF"
                 aria-label="Buscar usuários"
                 className="w-full pl-9 sm:w-72"
               />
@@ -192,7 +191,6 @@ export function UsuariosPage() {
                   >
                     {u.nome}
                   </Link>
-                  <p className="text-sm break-all text-muted-foreground">{u.email}</p>
                 </div>
                 <PerfilBadge role={u.role} />
               </div>
@@ -255,7 +253,6 @@ export function UsuariosPage() {
                         >
                           {u.nome}
                         </Link>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
                       </div>
                     </div>
                   </TableCell>

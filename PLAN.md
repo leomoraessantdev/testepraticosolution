@@ -158,7 +158,7 @@ O documento **não** pede editar nem excluir usuário; a lista da API é exatame
 - [x] Docker para subir o projeto — `docker compose up` sobe **db + api + web**; o frontend tem `Dockerfile` multi-stage e nginx com fallback de SPA
 - [x] Organização do backend em camadas — Controller → Service → Repository, agrupado por feature
 - [x] Tratamento adequado de erros da API — `GlobalExceptionHandler` no backend, formato único `ApiError`; no cliente `lib/erros.ts` traduz status e erros de campo
-- [x] Testes automatizados — **131 no total**: 90 no backend (`mvn verify`) e 41 no frontend (`npm test`), estes cobrindo o algoritmo de CPF com os mesmos vetores do backend, a armadilha de fuso na formatacao de data, a normalizacao de erro da API e o preenchimento automatico pelo CEP
+- [x] Testes automatizados — **132 no total**: 91 no backend (`mvn verify`) e 41 no frontend (`npm test`), estes cobrindo o algoritmo de CPF com os mesmos vetores do backend, a armadilha de fuso na formatacao de data, a normalizacao de erro da API e o preenchimento automatico pelo CEP
 
 ---
 
@@ -190,14 +190,19 @@ nenhum lugar** — nem nos requisitos, nem no formulário. O backend exige:
 `@NotBlank @Email` em `CriarUsuarioRequest`, coluna `email NOT NULL` em `V1:7`
 e índice único funcional `uk_usuarios_email` em `V1:25`.
 
-**Decisão: manter o campo, exibindo-o no formulário.** O documento não proíbe
-campo adicional, e e-mail é dado de contato esperado num cadastro. Remover
-custaria uma migration para derrubar o `NOT NULL` e ajustar o índice único, com
-risco desproporcional ao ganho.
+**Decisão: remover o campo.** O enunciado lista exatamente quatro campos, e o
+e-mail não era um deles — foi acréscimo meu. Entregar um campo obrigatório que
+ninguém pediu significa exigir um dado a mais de quem se cadastra e responder um
+campo a mais em toda listagem, sem nada no documento que justifique.
 
-**Registro honesto:** esta não é uma exigência do teste, é uma escolha minha. Se
-o avaliador considerar escopo extra, a correção é uma migration `V5` tornando a
-coluna opcional.
+A remoção foi feita pela migration `V7__remove_email_do_usuario.sql`, e não
+editando o `V1`: o `V1` já está publicado, e editar migration publicada quebra o
+checksum do Flyway para quem já clonou. O índice único `uk_usuarios_email` cai
+junto com a coluna.
+
+**O que se perdeu junto, de propósito:** a unicidade de e-mail e a exceção
+`EmailDuplicadoException`. O CPF continua sendo a credencial única, que é o que
+o documento pede.
 
 ## 3. O primeiro endereço vira principal automaticamente?
 
@@ -329,18 +334,26 @@ Três trechos puxam para lados diferentes:
    do usuário deve automaticamente se tornar o principal"* está na voz passiva,
    também sem ator.
 
-**Decisão: o usuário comum exclui os próprios endereços.** A lista de
-capacidades enumera o que cada perfil alcança, e a do comum já o torna dono do
-seu cadastro — cadastrar (garantido por *"O usuário deve poder cadastrar
-múltiplos endereços"*) e editar. Deixar criar e editar mas proibir apagar
-produziria um acúmulo que só um administrador poderia limpar, o que contraria
-a intenção de autonomia do resto da lista.
+**Decisão: apenas o administrador exclui endereços.** A lista de capacidades é
+tratada como exaustiva — é a leitura literal, e é a leitura segura: conceder
+permissão que o documento não deu é erro mais grave do que negar uma que ele
+talvez implicasse.
 
-**Risco assumido, e fácil de reverter:** se o avaliador ler a lista do usuário
-comum como exaustiva, esta é uma permissão a mais. A correção é uma linha — um
-`exigirAdmin()` em `EnderecoService.excluir` — mais esconder o botão em
-`UsuarioDetalhePage`. **Nota:** *criar* endereço pelo usuário comum NÃO tem esse
-risco, porque a seção de regras de negócio concede explicitamente.
+`EnderecoService.excluir` chama `exigirAdmin()`, e o botão some da tela para quem
+não é administrador. A garantia é do backend: quem chamar
+`DELETE /api/usuarios/{id}/enderecos/{eid}` com token de usuário comum recebe
+**403** — há teste para isso em `ContratoHttpIT` e em `EnderecoServiceIT`.
+
+**O que NÃO foi restringido, e por quê:** *criar* e *editar* endereço pelo
+usuário comum continuam liberados. Editar está na lista dele explicitamente, e
+criar é concedido pela seção de regras de negócio — *"O usuário deve poder
+cadastrar múltiplos endereços"*. Só a exclusão não tem respaldo em nenhuma das
+duas seções. Há teste cobrindo essa assimetria, para que mover o
+`exigirAdmin()` de lugar por engano não passe despercebido.
+
+**A REGRA 3 continua valendo:** ao excluir o principal, outro endereço é
+promovido automaticamente. Mudou quem pode disparar a exclusão, não o que
+acontece depois dela.
 
 ## 17. Resolvido: URL inexistente respondia 500
 

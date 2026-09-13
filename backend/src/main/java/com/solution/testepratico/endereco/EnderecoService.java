@@ -216,6 +216,10 @@ public class EnderecoService {
     /**
      * REGRA 3 - ao excluir o principal, outro endereco vira principal.
      *
+     * Restrito ao ADMINISTRADOR (decisao 16 do PLAN.md): o enunciado concede
+     * "Pode excluir enderecos" so a ele. O usuario comum cadastra, edita e
+     * define o principal dos proprios enderecos, mas nao apaga.
+     *
      * Decisao registrada no PLAN.md: se nao sobrar nenhum, o usuario fica com
      * zero enderecos e sem principal. A regra e "no maximo um principal", nunca
      * "no minimo um endereco" - bloquear a exclusao prenderia o usuario com um
@@ -240,7 +244,14 @@ public class EnderecoService {
      */
     @Transactional
     public void excluir(Long usuarioId, Long enderecoId) {
-        controleAcesso.exigirAcessoAoUsuario(usuarioId);
+        // exigirAdmin, e nao exigirAcessoAoUsuario: o documento lista "Pode excluir
+        // enderecos" APENAS entre as capacidades do Administrador. A lista do
+        // usuario comum traz visualizar, editar e definir principal - exclusao nao
+        // aparece. Decisao 16 do PLAN.md.
+        controleAcesso.exigirAdmin();
+
+        // A checagem de dono continua valendo logo abaixo: carregarDoUsuario filtra
+        // por usuarioId, entao nem o admin apaga um endereco pela rota errada.
 
         Endereco endereco = carregarDoUsuario(usuarioId, enderecoId);
         boolean eraPrincipal = endereco.isPrincipal();

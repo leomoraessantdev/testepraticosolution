@@ -1,7 +1,6 @@
 package com.solution.testepratico.usuario;
 
 import com.solution.testepratico.shared.exception.CpfDuplicadoException;
-import com.solution.testepratico.shared.exception.EmailDuplicadoException;
 import com.solution.testepratico.usuario.dto.CriarUsuarioRequest;
 import com.solution.testepratico.usuario.dto.UsuarioResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -51,8 +50,8 @@ class UsuarioServiceIT {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    private CriarUsuarioRequest pedido(String cpf, String email) {
-        return new CriarUsuarioRequest("Fulano de Tal", cpf, email,
+    private CriarUsuarioRequest pedido(String cpf) {
+        return new CriarUsuarioRequest("Fulano de Tal", cpf,
                 LocalDate.of(1990, 5, 20), "senhaSegura123");
     }
 
@@ -63,7 +62,7 @@ class UsuarioServiceIT {
     @Test
     @DisplayName("CPF duplicado e rejeitado com CpfDuplicadoException, nao com erro de banco")
     void cpfDuplicadoERejeitado() {
-        assertThatThrownBy(() -> usuarioService.criar(pedido(CPF_DA_ANA, "outro@exemplo.com")))
+        assertThatThrownBy(() -> usuarioService.criar(pedido(CPF_DA_ANA)))
                 .isInstanceOf(CpfDuplicadoException.class)
                 .hasMessageContaining("CPF");
     }
@@ -75,7 +74,7 @@ class UsuarioServiceIT {
         // nao casaria com "11144477735" gravado no banco: o insert passaria pelo
         // service e so estouraria no indice unico, virando um 409 generico em vez
         // da mensagem util que diz qual campo esta em conflito.
-        assertThatThrownBy(() -> usuarioService.criar(pedido("111.444.777-35", "outro@exemplo.com")))
+        assertThatThrownBy(() -> usuarioService.criar(pedido("111.444.777-35")))
                 .isInstanceOf(CpfDuplicadoException.class);
     }
 
@@ -85,7 +84,7 @@ class UsuarioServiceIT {
         // Escreve direto pelo repository, desviando do if do service. Prova que
         // a invariante pertence ao schema: entre o existsByCpf e o insert cabe
         // outra requisicao gravando o mesmo CPF, e e o indice que fecha a janela.
-        Usuario clandestino = new Usuario("Clone da Ana", CPF_DA_ANA, "clone@exemplo.com",
+        Usuario clandestino = new Usuario("Clone da Ana", CPF_DA_ANA,
                 LocalDate.of(1995, 6, 15), "$2b$10$hashQualquer", Role.USUARIO_COMUM);
 
         assertThatThrownBy(() -> usuarioRepository.saveAndFlush(clandestino))
@@ -97,7 +96,7 @@ class UsuarioServiceIT {
     void cpfLivreEAceito() {
         // Controle positivo. Sem ele, um CPF_LIVRE que por acaso ja existisse no
         // banco faria os testes de duplicidade passarem pelo motivo errado.
-        UsuarioResponse criado = usuarioService.criar(pedido(CPF_LIVRE, "livre@exemplo.com"));
+        UsuarioResponse criado = usuarioService.criar(pedido(CPF_LIVRE));
 
         assertThat(criado.id()).isNotNull();
         assertThat(criado.cpf()).isEqualTo(CPF_LIVRE);
@@ -108,18 +107,9 @@ class UsuarioServiceIT {
     // ==================================================================
 
     @Test
-    @DisplayName("e-mail duplicado e rejeitado ignorando a caixa")
-    void emailDuplicadoIgnoraCaixa() {
-        // O seed tem ana@exemplo.com. O indice e funcional, sobre lower(email),
-        // entao "ANA@EXEMPLO.COM" e o mesmo e-mail.
-        assertThatThrownBy(() -> usuarioService.criar(pedido(CPF_LIVRE, "ANA@EXEMPLO.COM")))
-                .isInstanceOf(EmailDuplicadoException.class);
-    }
-
-    @Test
     @DisplayName("cadastro publico nasce sempre USUARIO_COMUM, com a senha em hash BCrypt")
     void cadastroPublicoNasceUsuarioComum() {
-        usuarioService.criar(pedido(CPF_LIVRE, "livre@exemplo.com"));
+        usuarioService.criar(pedido(CPF_LIVRE));
 
         Usuario gravado = usuarioRepository.findByCpf(CPF_LIVRE).orElseThrow();
 
@@ -138,7 +128,7 @@ class UsuarioServiceIT {
         // Garante a premissa do teste de duplicidade com mascara: se o banco
         // guardasse "123.456.789-09", existiriam duas representacoes do mesmo
         // CPF e a unicidade nao valeria nada.
-        usuarioService.criar(pedido("123.456.789-09", "livre@exemplo.com"));
+        usuarioService.criar(pedido("123.456.789-09"));
 
         assertThat(usuarioRepository.existsByCpf(CPF_LIVRE)).isTrue();
     }
@@ -151,7 +141,7 @@ class UsuarioServiceIT {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
         try {
-            usuarioService.criar(pedido(CPF_LIVRE, "livre@exemplo.com"));
+            usuarioService.criar(pedido(CPF_LIVRE));
 
             var lista = usuarioService.listarTodos();
 

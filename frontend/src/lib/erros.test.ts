@@ -60,12 +60,12 @@ describe('camposInvalidos', () => {
       mensagem: 'Um ou mais campos estao invalidos.',
       campos: [
         { campo: 'cpf', mensagem: 'CPF invalido' },
-        { campo: 'email', mensagem: 'E-mail invalido' },
+        { campo: 'senha', mensagem: 'Senha muito curta' },
       ],
     })
     expect(camposInvalidos(erro)).toEqual({
       cpf: 'CPF invalido',
-      email: 'E-mail invalido',
+      senha: 'Senha muito curta',
     })
   })
 

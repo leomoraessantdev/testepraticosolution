@@ -8,7 +8,6 @@ import { chaves } from './chaves'
 export type NovoUsuario = {
   nome: string
   cpf: string
-  email: string
   dataNascimento: string
   senha: string
 }

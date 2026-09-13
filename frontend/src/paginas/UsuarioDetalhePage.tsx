@@ -51,7 +51,7 @@ function detalhe(e: EnderecoResponse): string {
 export function UsuarioDetalhePage() {
   const { id } = useParams<{ id: string }>()
   const usuarioId = id ? Number(id) : undefined
-  const { sessao } = useAuth()
+  const { sessao, ehAdmin } = useAuth()
 
   const { data: usuario, isPending, error } = useUsuario(usuarioId)
 
@@ -145,7 +145,6 @@ export function UsuarioDetalhePage() {
             <Dado rotulo="Data de nascimento" mono>
               {formatarData(usuario.dataNascimento)}
             </Dado>
-            <Dado rotulo="E-mail">{usuario.email}</Dado>
           </dl>
         </section>
 
@@ -220,14 +219,19 @@ export function UsuarioDetalhePage() {
                     <Button variant="ghost" size="sm" onClick={() => abrirEdicao(e)}>
                       Editar
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setAExcluir(e)}
-                    >
-                      Excluir
-                    </Button>
+                    {/* Exclusao e capacidade so do administrador (decisao 16 do
+                        PLAN.md). Esconder o botao e UX; a garantia esta no
+                        backend, que responde 403 a quem chamar a rota direto. */}
+                    {ehAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setAExcluir(e)}
+                      >
+                        Excluir
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

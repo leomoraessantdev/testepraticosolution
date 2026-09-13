@@ -4,7 +4,6 @@ import com.solution.testepratico.endereco.EnderecoService;
 import com.solution.testepratico.seguranca.ControleAcesso;
 import com.solution.testepratico.shared.CpfUtils;
 import com.solution.testepratico.shared.exception.CpfDuplicadoException;
-import com.solution.testepratico.shared.exception.EmailDuplicadoException;
 import com.solution.testepratico.shared.exception.RecursoNaoEncontradoException;
 import com.solution.testepratico.usuario.dto.CriarUsuarioRequest;
 import com.solution.testepratico.usuario.dto.UsuarioDetalheResponse;
@@ -49,19 +48,14 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse criar(CriarUsuarioRequest request) {
         String cpf = CpfUtils.normalizar(request.cpf());
-        String email = request.email().trim();
 
         if (usuarioRepository.existsByCpf(cpf)) {
             throw new CpfDuplicadoException();
-        }
-        if (usuarioRepository.existsByEmailIgnoreCase(email)) {
-            throw new EmailDuplicadoException();
         }
 
         Usuario usuario = new Usuario(
                 request.nome().trim(),
                 cpf,
-                email,
                 request.dataNascimento(),
                 passwordEncoder.encode(request.senha()),
                 Role.USUARIO_COMUM);

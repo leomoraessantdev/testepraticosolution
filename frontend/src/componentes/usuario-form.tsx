@@ -22,13 +22,12 @@ import { cpfValido, mascararCpf } from '@/lib/validacao'
  * Validacao de UX. O backend valida tudo de novo - ver lib/validacao.ts.
  *
  * Os campos vem da secao de requisitos do documento: nome, CPF, data de
- * nascimento e senha. O e-mail NAO esta no documento; e exigido pelo backend e a
- * decisao de mante-lo esta registrada no PLAN.md (decisao 2).
+ * nascimento e senha. Sao exatamente esses quatro: o enunciado nao pede
+ * mais nada, e campo a mais em cadastro e atrito a mais para quem se cadastra.
  */
 export const schemaUsuario = z.object({
   nome: z.string().trim().min(1, 'Informe o nome').max(150, 'No máximo 150 caracteres'),
   cpf: z.string().min(1, 'Informe o CPF').refine(cpfValido, 'CPF inválido. Confira os números.'),
-  email: z.string().min(1, 'Informe o e-mail').email('E-mail inválido'),
   dataNascimento: z
     .string()
     .min(1, 'Informe a data de nascimento')
@@ -44,7 +43,6 @@ export type FormularioUsuario = z.infer<typeof schemaUsuario>
 export const VALORES_VAZIOS: FormularioUsuario = {
   nome: '',
   cpf: '',
-  email: '',
   dataNascimento: '',
   senha: '',
 }
@@ -84,20 +82,6 @@ export function CamposUsuario({ form }: { form: UseFormReturn<FormularioUsuario>
                 // digitos crus, porque o banco guarda sem mascara.
                 onChange={(e) => field.onChange(mascararCpf(e.target.value))}
               />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>E-mail</FormLabel>
-            <FormControl>
-              <Input {...field} type="email" autoComplete="email" placeholder="pessoa@exemplo.com" />
             </FormControl>
             <FormMessage />
           </FormItem>

@@ -11,11 +11,4 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByCpf(String cpf);
 
-    /**
-     * IgnoreCase gera "lower(email) = lower(?)", que casa exatamente com o
-     * indice funcional uk_usuarios_email.
-     */
-    Optional<Usuario> findByEmailIgnoreCase(String email);
-
-    boolean existsByEmailIgnoreCase(String email);
 }

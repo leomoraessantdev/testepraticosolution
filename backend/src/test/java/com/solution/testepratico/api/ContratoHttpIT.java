@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -82,11 +83,11 @@ class ContratoHttpIT {
         return "Bearer " + tokenDaAna;
     }
 
-    private String corpoDeCadastro(String cpf, String email) {
+    private String corpoDeCadastro(String cpf) {
         return """
-                {"nome":"Fulano de Tal","cpf":"%s","email":"%s",
+                {"nome":"Fulano de Tal","cpf":"%s",
                  "dataNascimento":"1990-05-20","senha":"senhaSegura123"}
-                """.formatted(cpf, email);
+                """.formatted(cpf);
     }
 
     // ==================================================================
@@ -206,7 +207,7 @@ class ContratoHttpIT {
         // consertar nele. O conflito e com o estado atual do sistema.
         mockMvc.perform(post("/api/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpoDeCadastro(CPF_DA_ANA, "novo@exemplo.com")))
+                        .content(corpoDeCadastro(CPF_DA_ANA)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
     }
@@ -216,7 +217,7 @@ class ContratoHttpIT {
     void cpfDuplicadoComMascaraDa409() throws Exception {
         mockMvc.perform(post("/api/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpoDeCadastro("111.444.777-35", "novo@exemplo.com")))
+                        .content(corpoDeCadastro("111.444.777-35")))
                 .andExpect(status().isConflict());
     }
 
@@ -227,7 +228,7 @@ class ContratoHttpIT {
         // calculo do digito verificador.
         mockMvc.perform(post("/api/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpoDeCadastro("52998224724", "novo@exemplo.com")))
+                        .content(corpoDeCadastro("52998224724")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 // A lista de campos e o que permite o formulario marcar o input
@@ -240,7 +241,7 @@ class ContratoHttpIT {
     void cpfDeSequenciaRepetidaDa400() throws Exception {
         mockMvc.perform(post("/api/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpoDeCadastro("11111111111", "novo@exemplo.com")))
+                        .content(corpoDeCadastro("11111111111")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos[*].campo", hasItem("cpf")));
     }
@@ -254,7 +255,7 @@ class ContratoHttpIT {
     void senhaNuncaSaiNaResposta() throws Exception {
         String respostaDoCadastro = mockMvc.perform(post("/api/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpoDeCadastro(CPF_LIVRE, "livre@exemplo.com")))
+                        .content(corpoDeCadastro(CPF_LIVRE)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.senha").doesNotExist())
                 .andExpect(jsonPath("$.senhaHash").doesNotExist())
@@ -282,7 +283,7 @@ class ContratoHttpIT {
         // entao o campo e descartado em silencio. Este teste existe para que
         // alguem que adicione "role" ao DTO no futuro quebre aqui.
         String corpoMalicioso = """
-                {"nome":"Fulano de Tal","cpf":"12345678909","email":"livre@exemplo.com",
+                {"nome":"Fulano de Tal","cpf":"12345678909",
                  "dataNascimento":"1990-05-20","senha":"senhaSegura123","role":"ADMIN"}
                 """;
 
@@ -303,5 +304,22 @@ class ContratoHttpIT {
                         .header("Authorization", comoAna()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("403: usuario comum nao exclui nem o proprio endereco")
+    void usuarioComumNaoExcluiOProprioDa403() throws Exception {
+        // "Pode excluir enderecos" e capacidade so do Administrador no enunciado.
+        // Decisao 16 do PLAN.md. Aqui o valor esta no STATUS: a tela esconde o
+        // botao, mas quem chamar a API direto precisa receber 403.
+        Long meuEndereco = enderecoRepository
+                .findByUsuarioIdAndPrincipalTrue(ana.getId()).orElseThrow().getId();
+
+        mockMvc.perform(delete("/api/usuarios/{usuarioId}/enderecos/{enderecoId}",
+                        ana.getId(), meuEndereco)
+                        .header("Authorization", comoAna()))
+                .andExpect(status().isForbidden());
+
+        assertThat(enderecoRepository.findById(meuEndereco)).isPresent();
     }
 }

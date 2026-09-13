@@ -182,7 +182,9 @@ class EnderecoServiceIT {
     @Test
     @DisplayName("REGRA 3: excluir o principal promove o endereco mais antigo restante")
     void excluirPrincipalPromoveSucessor() {
-        autenticarComo(ana);
+        // Admin, e nao a Ana: desde a decisao 16 a exclusao e capacidade so do
+        // administrador. A REGRA 3 continua a mesma, muda quem pode dispara-la.
+        autenticarComoAdmin();
 
         Long idPrincipalOriginal = enderecoRepository.findByUsuarioIdAndPrincipalTrue(ana.getId())
                 .orElseThrow().getId();
@@ -215,7 +217,7 @@ class EnderecoServiceIT {
     @Test
     @DisplayName("REGRA 3: excluir um endereco NAO principal nao promove ninguem")
     void excluirNaoPrincipalNaoPromove() {
-        autenticarComo(ana);
+        autenticarComoAdmin();
 
         Long idPrincipal = enderecoRepository.findByUsuarioIdAndPrincipalTrue(ana.getId())
                 .orElseThrow().getId();
@@ -241,7 +243,7 @@ class EnderecoServiceIT {
         // usuarios do seed ja nascem com dois enderecos, entao nenhum deles serve
         // para testar o PRIMEIRO endereco de alguem.
         Usuario semEndereco = usuarioRepository.save(new Usuario(
-                "Sem Endereco", "12345678909", "sem.endereco@exemplo.com",
+                "Sem Endereco", "12345678909",
                 LocalDate.of(1990, 1, 1), "$2b$10$hashQualquer", Role.USUARIO_COMUM));
 
         assertThat(enderecoRepository.existsByUsuarioId(semEndereco.getId())).isFalse();
@@ -258,7 +260,7 @@ class EnderecoServiceIT {
     @Test
     @DisplayName("PLAN.md: excluir o unico endereco deixa o usuario com zero, sem erro")
     void excluirUltimoEndereco() {
-        autenticarComo(bruno);
+        autenticarComoAdmin();
 
         // Zera o estado em vez de assumir o seed: outro teste ou uma execucao
         // manual contra o mesmo banco pode ter mexido nos enderecos do Bruno.
@@ -416,5 +418,37 @@ class EnderecoServiceIT {
                 Comparator.comparing(EnderecoAdminResponse::usuarioNome)
                         .thenComparing(EnderecoAdminResponse::principal, Comparator.reverseOrder())
                         .thenComparing(EnderecoAdminResponse::id));
+    }
+
+    @Test
+    @DisplayName("usuario comum NAO exclui nem o proprio endereco")
+    void usuarioComumNaoExcluiOProprio() {
+        // O enunciado lista "Pode excluir enderecos" apenas entre as capacidades
+        // do Administrador. A lista do usuario comum tem visualizar, editar e
+        // definir principal - exclusao nao aparece. Decisao 16 do PLAN.md.
+        Long meuEndereco = enderecoRepository.findByUsuarioIdAndPrincipalTrue(ana.getId())
+                .orElseThrow().getId();
+        autenticarComo(ana);
+
+        assertThatThrownBy(() -> enderecoService.excluir(ana.getId(), meuEndereco))
+                .isInstanceOf(AcessoNegadoException.class);
+    }
+
+    @Test
+    @DisplayName("usuario comum continua podendo criar, editar e definir principal")
+    void usuarioComumMantemAsOutrasCapacidades() {
+        // Contraponto do teste acima: a restricao vale SO para exclusao. Sem
+        // isto, trocar exigirAdmin de lugar por engano passaria despercebido.
+        autenticarComo(ana);
+
+        EnderecoResponse criado = enderecoService.criar(ana.getId(), pedido("01001000", "10", false));
+        assertThat(criado.id()).isNotNull();
+
+        var atualizado = enderecoService.atualizar(ana.getId(), criado.id(),
+                new AtualizarEnderecoRequest("01001000", "Praca da Se", "11", null,
+                        "Se", "Sao Paulo", "SP"));
+        assertThat(atualizado.numero()).isEqualTo("11");
+
+        assertThat(enderecoService.definirPrincipal(ana.getId(), criado.id()).principal()).isTrue();
     }
 }

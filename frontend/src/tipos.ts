@@ -17,7 +17,6 @@ export type UsuarioResponse = {
   id: number
   nome: string
   cpf: string
-  email: string
   dataNascimento: string
   role: Role
   ativo: boolean

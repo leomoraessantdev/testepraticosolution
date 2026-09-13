@@ -18,7 +18,7 @@ class JwtServiceTest {
     private final JwtService jwtService = new JwtService(SEGREDO, 120);
 
     private Usuario usuario(Long id, String cpf, Role role) {
-        var u = new Usuario("Fulano", cpf, "f@x.com", LocalDate.of(1990, 1, 1), "hash", role);
+        var u = new Usuario("Fulano", cpf, LocalDate.of(1990, 1, 1), "hash", role);
         ReflectionTestUtils.setField(u, "id", id);
         return u;
     }

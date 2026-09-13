@@ -33,9 +33,6 @@ public class Usuario {
     @Column(nullable = false, length = 11)
     private String cpf;
 
-    @Column(nullable = false, length = 255)
-    private String email;
-
     /**
      * Data de calendario: sem hora e sem fuso, entao LocalDate e nao Instant.
      * A data de nascimento de alguem nao muda conforme o fuso de quem le.
@@ -65,11 +62,10 @@ public class Usuario {
     protected Usuario() {
     }
 
-    public Usuario(String nome, String cpf, String email, LocalDate dataNascimento,
+    public Usuario(String nome, String cpf, LocalDate dataNascimento,
                    String senhaHash, Role role) {
         this.nome = nome;
         this.cpf = cpf;
-        this.email = email;
         this.dataNascimento = dataNascimento;
         this.senhaHash = senhaHash;
         this.role = role;
@@ -93,14 +89,6 @@ public class Usuario {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getSenhaHash() {
@@ -175,6 +163,6 @@ public class Usuario {
 
     @Override
     public String toString() {
-        return "Usuario{id=" + id + ", email='" + email + "'}";
+        return "Usuario{id=" + id + ", cpf='" + cpf + "'}";
     }
 }

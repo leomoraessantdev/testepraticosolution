@@ -1,7 +1,6 @@
 package com.solution.testepratico.usuario.dto;
 
 import com.solution.testepratico.shared.validacao.Cpf;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -30,11 +29,6 @@ public record CriarUsuarioRequest(
         @NotBlank(message = "CPF e obrigatorio")
         @Cpf
         String cpf,
-
-        @NotBlank(message = "E-mail e obrigatorio")
-        @Email(message = "E-mail invalido")
-        @Size(max = 255, message = "E-mail deve ter no maximo 255 caracteres")
-        String email,
 
         @NotNull(message = "Data de nascimento e obrigatoria")
         @PastOrPresent(message = "Data de nascimento nao pode ser futura")

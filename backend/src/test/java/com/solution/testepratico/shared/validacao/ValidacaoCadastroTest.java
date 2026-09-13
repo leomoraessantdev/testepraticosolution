@@ -28,8 +28,7 @@ class ValidacaoCadastroTest {
     }
 
     private CriarUsuarioRequest pedido(String cpf, LocalDate nascimento) {
-        return new CriarUsuarioRequest("Fulano de Tal", cpf, "fulano@exemplo.com",
-                nascimento, "senhaSegura123");
+        return new CriarUsuarioRequest("Fulano de Tal", cpf, nascimento, "senhaSegura123");
     }
 
     private Set<String> camposComErro(CriarUsuarioRequest pedido) {
@@ -98,17 +97,9 @@ class ValidacaoCadastroTest {
     // ---------- Demais campos ----------
 
     @Test
-    @DisplayName("e-mail invalido e rejeitado")
-    void emailInvalido() {
-        var pedido = new CriarUsuarioRequest("Fulano", "52998224725", "nao-e-email",
-                LocalDate.of(1990, 5, 20), "senhaSegura123");
-        assertThat(camposComErro(pedido)).contains("email");
-    }
-
-    @Test
     @DisplayName("senha curta demais e rejeitada")
     void senhaCurta() {
-        var pedido = new CriarUsuarioRequest("Fulano", "52998224725", "f@x.com",
+        var pedido = new CriarUsuarioRequest("Fulano", "52998224725",
                 LocalDate.of(1990, 5, 20), "1234");
         assertThat(camposComErro(pedido)).contains("senha");
     }
