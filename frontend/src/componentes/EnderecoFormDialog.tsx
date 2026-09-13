@@ -201,8 +201,14 @@ export function EnderecoFormDialog({ usuarioId, endereco, aberto, onFechar }: Pr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>CEP</FormLabel>
-                    <FormControl>
-                      <div className="relative">
+                    {/* O wrapper de posicionamento fica FORA do FormControl.
+                        FormControl e um Slot: ele injeta id e aria-* no filho
+                        direto. Com a div no meio, o id ia para a div e o
+                        <label for> do CEP apontava para ela em vez do input -
+                        clicar no rotulo nao focava o campo e o leitor de tela
+                        nao associava os dois. */}
+                    <div className="relative">
+                      <FormControl>
                         <Input
                           {...field}
                           autoFocus
@@ -214,14 +220,14 @@ export function EnderecoFormDialog({ usuarioId, endereco, aberto, onFechar }: Pr
                             void preencherPeloCep(e.target.value)
                           }}
                         />
-                        {buscandoCep && (
-                          <Loader2
-                            className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
-                            aria-hidden
-                          />
-                        )}
-                      </div>
-                    </FormControl>
+                      </FormControl>
+                      {buscandoCep && (
+                        <Loader2
+                          className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                          aria-hidden
+                        />
+                      )}
+                    </div>
                     <FormDescription className="text-xs">
                       {buscandoCep ? 'Consultando CEP...' : 'Sai do campo e o endereço é buscado.'}
                     </FormDescription>

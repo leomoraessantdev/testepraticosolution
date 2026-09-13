@@ -4,7 +4,8 @@ Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
 > **Status:** backend e frontend implementados e verificados contra o
-> enunciado. 88 testes automatizados no backend (`mvn verify`).
+> enunciado. 130 testes automatizados — 89 no backend (`mvn verify`) e 41 no
+> frontend (`npm test`).
 >
 > O checklist item por item, com citacao literal do documento, esta em
 > [PLAN.md](PLAN.md) — inclusive o unico requisito ainda pendente: publicar o
@@ -331,7 +332,9 @@ valer juntos.
 
 ## Testes
 
-88 testes: 43 unitarios e 45 de integracao contra um Postgres de verdade.
+**130 testes: 89 no backend e 41 no frontend.**
+
+No backend sao 43 unitarios e 46 de integracao contra um Postgres de verdade.
 
 **Rode `mvn verify`, nao `mvn test`.** O Surefire roda apenas os `*Test`; os
 `*IT` — onde vivem as regras de negocio — sao do Failsafe, na fase `verify`.
@@ -364,3 +367,30 @@ docker run --rm --network testepraticosolution_default \n  -e DB_URL=jdbc:postgr
 | Build | Maven |
 | Frontend | React + Vite + TypeScript (etapa 3) |
 | Infra | Docker Compose |
+
+### Testes do frontend
+
+```bash
+cd frontend && npm test
+```
+
+41 testes, e a escolha do que testar segue a mesma regra do backend: regra de
+negocio, nao cobertura.
+
+- `validacao.test.ts` usa **os mesmos vetores de CPF do CpfUtilsTest do
+  backend**. O arquivo `lib/validacao.ts` e uma reimplementacao do
+  `CpfUtils.java`, e duas implementacoes da mesma regra em linguagens
+  diferentes divergem em silencio com o tempo. Se um dia discordarem, um dos
+  dois quebra.
+- `formato.test.ts` prova a armadilha de fuso: `new Date("1995-06-15")` e
+  meia-noite UTC e, em qualquer fuso do Brasil, exibiria **14/06**. O teste
+  força `America/Sao_Paulo` e compara as duas formas.
+- `EnderecoFormDialog.test.tsx` cobre o requisito central da tela: o
+  preenchimento automatico ao sair do campo CEP, o CEP incompleto que **nao**
+  chama a API, a segunda consulta do mesmo CEP absorvida pelo cache, e o CEP
+  inexistente que avisa sem travar o cadastro.
+
+Esse ultimo arquivo encontrou um defeito real assim que foi escrito: o
+`FormControl` do shadcn e um `Slot` e injeta o `id` no filho direto; como o
+`Input` do CEP estava dentro de uma `div` de posicionamento, o `id` ia para a
+`div` e o `<label for>` apontava para ela. Clicar no rotulo nao focava o campo.

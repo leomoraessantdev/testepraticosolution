@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Relatorio JSON gerado pelo wrapper de testes
+.vitest
