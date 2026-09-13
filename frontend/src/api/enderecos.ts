@@ -53,7 +53,6 @@ function useInvalidarEnderecos(usuarioId: number) {
   const queryClient = useQueryClient()
 
   return () => {
-    queryClient.invalidateQueries({ queryKey: chaves.enderecos(usuarioId) })
     queryClient.invalidateQueries({ queryKey: chaves.usuario(usuarioId) })
     queryClient.invalidateQueries({ queryKey: ['enderecos-globais'] })
   }

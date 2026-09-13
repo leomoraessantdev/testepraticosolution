@@ -27,8 +27,11 @@ export function useUsuarios() {
 export function useUsuario(id: number | undefined) {
   return useQuery({
     queryKey: chaves.usuario(id ?? 0),
-    // Nao dispara sem id: um GET /api/usuarios/undefined viraria 400.
-    enabled: id !== undefined,
+    // Nao dispara sem id valido. O !== undefined sozinho nao basta: Number("abc")
+    // e NaN, que passa nessa checagem e vira um GET /api/usuarios/NaN - uma ida ao
+    // servidor garantidamente inutil, respondida com 400 e uma mensagem tecnica na
+    // cara do usuario.
+    enabled: id !== undefined && Number.isInteger(id),
     queryFn: async () => {
       const { data } = await api.get<UsuarioDetalheResponse>(`/api/usuarios/${id}`)
       return data

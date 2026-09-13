@@ -8,7 +8,6 @@
 export const chaves = {
   usuarios: ['usuarios'] as const,
   usuario: (id: number) => ['usuario', id] as const,
-  enderecos: (usuarioId: number) => ['enderecos', usuarioId] as const,
   enderecosGlobais: (pagina: number) => ['enderecos-globais', pagina] as const,
   cep: (cep: string) => ['cep', cep] as const,
 }

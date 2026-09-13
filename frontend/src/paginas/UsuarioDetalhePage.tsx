@@ -50,7 +50,9 @@ function detalhe(e: EnderecoResponse): string {
  */
 export function UsuarioDetalhePage() {
   const { id } = useParams<{ id: string }>()
-  const usuarioId = id ? Number(id) : undefined
+  // So aceita id inteiro. Sem o teste do formato, /usuarios/abc viraria NaN e
+  // seguiria adiante como se fosse um id.
+  const usuarioId = id !== undefined && /^[0-9]+$/.test(id) ? Number(id) : undefined
   const { sessao, ehAdmin } = useAuth()
 
   const { data: usuario, isPending, error } = useUsuario(usuarioId)
@@ -90,6 +92,18 @@ export function UsuarioDetalhePage() {
       },
       onError: (erro) => toast.error(mensagemDeErro(erro)),
     })
+  }
+
+  if (usuarioId === undefined) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertCircle className="size-4" aria-hidden />
+        <AlertTitle>Endereço inválido</AlertTitle>
+        <AlertDescription>
+          O identificador na URL não é um número de usuário válido.
+        </AlertDescription>
+      </Alert>
+    )
   }
 
   if (error) {
