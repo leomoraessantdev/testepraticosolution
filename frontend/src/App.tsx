@@ -1,15 +1,34 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/auth/auth-context'
 import { Layout } from '@/componentes/Layout'
 import { RotaProtegida } from '@/componentes/RotaProtegida'
 import { Toaster } from '@/components/ui/sonner'
-import { CadastroPage } from '@/paginas/CadastroPage'
-import { EnderecosGlobaisPage } from '@/paginas/EnderecosGlobaisPage'
-import { Inicio } from '@/paginas/Inicio'
-import { LoginPage } from '@/paginas/LoginPage'
-import { UsuarioDetalhePage } from '@/paginas/UsuarioDetalhePage'
-import { UsuariosPage } from '@/paginas/UsuariosPage'
+
+/**
+ * Paginas carregadas sob demanda.
+ *
+ * Em um unico bundle, quem abre a tela de login baixa tambem as telas de
+ * administrador que talvez nunca veja. Com o split, cada rota vira um arquivo
+ * proprio e so chega ao navegador quando a pessoa navega ate ela.
+ *
+ * lazy() espera export default; as paginas usam export nomeado, dai o .then que
+ * reembrulha. Preferi manter os nomes a trocar tudo para default so por causa
+ * disso - o nome ajuda no stack trace e no autocomplete.
+ */
+const lazyPagina = <T extends Record<string, React.ComponentType>>(
+  carregar: () => Promise<T>,
+  nome: keyof T,
+) => lazy(() => carregar().then((m) => ({ default: m[nome] })))
+
+const LoginPage = lazyPagina(() => import('@/paginas/LoginPage'), 'LoginPage')
+const CadastroPage = lazyPagina(() => import('@/paginas/CadastroPage'), 'CadastroPage')
+const Inicio = lazyPagina(() => import('@/paginas/Inicio'), 'Inicio')
+const UsuariosPage = lazyPagina(() => import('@/paginas/UsuariosPage'), 'UsuariosPage')
+const UsuarioDetalhePage = lazyPagina(() => import('@/paginas/UsuarioDetalhePage'), 'UsuarioDetalhePage')
+const EnderecosGlobaisPage = lazyPagina(() => import('@/paginas/EnderecosGlobaisPage'), 'EnderecosGlobaisPage')
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +59,12 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          {/* Suspense unico, em volta de todas as rotas: cada pagina e um
+              arquivo separado agora, e o fallback cobre o instante entre clicar
+              no link e o arquivo chegar. Uma barra fina no topo, e nao um
+              spinner de tela cheia - em rede local o arquivo chega tao rapido
+              que um bloco grande so produziria um flash. */}
+          <Suspense fallback={<div className="h-1 w-full animate-pulse bg-primary/20" />}>
           <Routes>
             {/* Publicas: quem ainda nao tem token precisa alcancar as duas. */}
             <Route path="/login" element={<LoginPage />} />
@@ -64,6 +89,7 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
         <Toaster richColors position="top-center" />
       </AuthProvider>
