@@ -144,9 +144,9 @@ O documento **não** pede editar nem excluir usuário; a lista da API é exatame
 
 ## 13. Entrega
 
-- [ ] **Repositório público no GitHub**
+- [x] **Repositório público no GitHub**
       `Fonte:` *"Todo o código deve ser disponibilizado em um repositório público no GitHub."*
-      → **PENDENTE.** Não há remote configurado; os commits existem só na máquina local. É requisito binário: sem isso não há entrega
+      → https://github.com/leomoraessantdev/testepraticosolution (visibilidade `PUBLIC` confirmada)
 - [x] Código do frontend e do backend no repositório
 - [x] README com descrição do projeto → `README.md:1`
 - [x] README com instruções para rodar → `README.md:12`
@@ -311,7 +311,38 @@ mas exigiria o backend ler cookie em vez do header `Authorization` e reativar a
 proteção CSRF — hoje desligada justamente porque não há cookie. Mitigações: o
 token expira em 120 minutos e não carrega nada sensível além de id, CPF e role.
 
-## 16. Resolvido: URL inexistente respondia 500
+## 16. O usuário comum pode EXCLUIR os próprios endereços?
+
+**Ambíguo, e é a ambiguidade mais sutil do documento.**
+
+`Fonte (Administrador):` *"Pode excluir endereços"*
+`Fonte (Usuário comum):` *"Pode visualizar apenas seus próprios dados • Pode
+visualizar apenas seus próprios endereços • Pode editar seus próprios endereços •
+Pode definir qual endereço é o principal"* — **exclusão não aparece.**
+
+Três trechos puxam para lados diferentes:
+
+1. A lista de capacidades do usuário comum **não** concede exclusão.
+2. A funcionalidade 7 é genérica: *"Exclusão de endereço — Permitir remover
+   endereços cadastrados"*, sem dizer quem remove.
+3. A regra de negócio *"Caso o endereço principal seja removido, outro endereço
+   do usuário deve automaticamente se tornar o principal"* está na voz passiva,
+   também sem ator.
+
+**Decisão: o usuário comum exclui os próprios endereços.** A lista de
+capacidades enumera o que cada perfil alcança, e a do comum já o torna dono do
+seu cadastro — cadastrar (garantido por *"O usuário deve poder cadastrar
+múltiplos endereços"*) e editar. Deixar criar e editar mas proibir apagar
+produziria um acúmulo que só um administrador poderia limpar, o que contraria
+a intenção de autonomia do resto da lista.
+
+**Risco assumido, e fácil de reverter:** se o avaliador ler a lista do usuário
+comum como exaustiva, esta é uma permissão a mais. A correção é uma linha — um
+`exigirAdmin()` em `EnderecoService.excluir` — mais esconder o botão em
+`UsuarioDetalhePage`. **Nota:** *criar* endereço pelo usuário comum NÃO tem esse
+risco, porque a seção de regras de negócio concede explicitamente.
+
+## 17. Resolvido: URL inexistente respondia 500
 
 Defeito encontrado na auditoria, **já corrigido**. `SecurityConfig` liberava
 `/actuator/health`, mas o starter do actuator não estava no `pom.xml`: a rota

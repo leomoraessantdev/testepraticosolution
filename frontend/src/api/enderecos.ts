@@ -25,20 +25,6 @@ function semMascara(corpo: CorpoEndereco): CorpoEndereco {
   return { ...corpo, cep: somenteDigitos(corpo.cep) }
 }
 
-/** Enderecos de um usuario. O principal vem primeiro (ordenacao do backend). */
-export function useEnderecos(usuarioId: number | undefined) {
-  return useQuery({
-    queryKey: chaves.enderecos(usuarioId ?? 0),
-    enabled: usuarioId !== undefined,
-    queryFn: async () => {
-      const { data } = await api.get<EnderecoResponse[]>(
-        `/api/usuarios/${usuarioId}/enderecos`,
-      )
-      return data
-    },
-  })
-}
-
 /** Listagem global paginada. Restrita a ADMIN no backend. */
 export function useEnderecosGlobais(pagina: number, tamanho = 20) {
   return useQuery({
