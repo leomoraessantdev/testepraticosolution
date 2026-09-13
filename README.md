@@ -4,12 +4,12 @@ Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
 > **Status:** backend e frontend implementados e verificados contra o
-> enunciado. 130 testes automatizados — 89 no backend (`mvn verify`) e 41 no
-> frontend (`npm test`).
+> enunciado. **131 testes automatizados** — 90 no backend (`mvn verify`) e 41
+> no frontend (`npm test`).
 >
 > O checklist item por item, com citacao literal do documento, esta em
-> [PLAN.md](PLAN.md) — inclusive o unico requisito ainda pendente: publicar o
-> repositorio no GitHub.
+> [PLAN.md](PLAN.md), junto das ambiguidades encontradas e da decisao tomada em
+> cada uma.
 
 ---
 
@@ -37,9 +37,8 @@ CORS (`CORS_ORIGENS`). O `web` so sobe depois que o healthcheck da API passa,
 que por sua vez espera o healthcheck do Postgres — entao nao ha corrida entre o
 Flyway e o banco.
 
-O primeiro boot leva alguns minutos (build Maven dentro do container). A API so
-inicia depois que o healthcheck do Postgres passa, entao nao ha corrida entre o
-Flyway e o banco.
+O primeiro boot leva alguns minutos: o Maven compila o backend e o Vite
+constroi o frontend, os dois dentro dos containers.
 
 Para recomecar do zero, apagando o volume do banco:
 
@@ -49,7 +48,7 @@ docker compose down -v && docker compose up --build
 
 ### Credenciais iniciais
 
-Criadas pelas migrations `V3__seed_usuarios.sql` e `V5__seed_segundo_endereco.sql`.
+Criadas pelas migrations `V3`, `V5` e `V6` (usuarios, segundo endereco e acentuacao).
 **Login e por CPF.**
 
 Os tres usuarios do seed tem **dois enderecos cada, exatamente um principal** —
@@ -63,7 +62,11 @@ nada a mao.
 | USUARIO_COMUM | `39053344705` | `usuario123` | Bruno Lima, 2 enderecos |
 
 Ana e Bruno existem para demonstrar o isolamento entre usuarios: autenticado
-como Ana, tente ler os dados de Bruno e a API responde 403.
+como Ana, tente ler os dados de Bruno e a API responde 403 — e os itens de
+administrador somem do menu.
+
+A tela de login traz botoes de **contas de demonstracao** que preenchem o
+formulario, entao da para entrar sem copiar CPF daqui.
 
 O CPF aceita mascara no login (`111.444.777-35` funciona); e normalizado para
 digitos antes da consulta.
@@ -78,11 +81,23 @@ curl -X POST http://localhost:8080/api/auth/login \
 curl http://localhost:8080/api/usuarios -H "Authorization: Bearer SEU_TOKEN"
 ```
 
-### Rodar os testes
+### Rodar em modo de desenvolvimento
+
+O compose serve o frontend ja construido. Para mexer nele com recarga
+automatica, suba so o banco e a API no Docker e rode o Vite na maquina:
 
 ```bash
-docker run --rm -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn test
+docker compose up -d db api
+cd frontend
+cp .env.example .env
+npm install
+npm run dev                  # http://localhost:5173
 ```
+
+### Rodar os testes
+
+Ver a secao [Testes](#testes). Em resumo: `mvn verify` no backend — **nao**
+`mvn test`, que pula os de integracao — e `npm test` no frontend.
 
 ---
 
@@ -92,7 +107,7 @@ docker run --rm -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn 
 .
 ├── backend/           API Java 21 + Spring Boot
 ├── frontend/          React + Vite + TypeScript (nginx no Docker)
-├── docker-compose.yml Postgres + API
+├── docker-compose.yml Postgres + API + Frontend
 ├── .env.example       template de variaveis
 ├── PLAN.md            checklist de requisitos + ambiguidades
 └── README.md
@@ -113,8 +128,9 @@ backend/src/main/java/com/solution/testepratico/
 
 A alternativa seria agrupar por camada (`controller/`, `service/`, ...). As
 camadas continuam existindo — apenas verticalmente, por dominio. Ganho
-concreto: mexer em "endereco" toca um diretorio so, e o repository pode ficar
-package-private, o que impede um controller de pular o service.
+concreto: mexer em "endereco" toca um diretorio so, e a regra de dependencia
+fica visivel — nenhum controller importa um Repository, entao a chamada sempre
+desce por Controller -> Service -> Repository.
 
 ---
 
@@ -160,9 +176,13 @@ que `Leo@x.com` e `leo@x.com` virem duas contas.
 **Senha com BCrypt** (custo 10, salt aleatorio por senha). O custo fica gravado
 dentro do hash, entao aumenta-lo depois nao invalida senhas existentes.
 
-**JWT HS256, stateless.** O token carrega id, CPF e role. A assinatura e
+**JWT HS512, stateless.** O token carrega id, CPF e role. A assinatura e
 validada antes do conteudo ser lido, entao adulterar a role no payload nao
 funciona sem o segredo do servidor.
+
+O algoritmo nao e escolhido a mao: `Keys.hmacShaKeyFor(segredo)` deriva a chave e
+a JJWT seleciona o HMAC mais forte que o tamanho dela suporta — com segredo de 64
+bytes ou mais, HS512. Conferido decodificando o header de um token real.
 
 **Isolamento entre usuarios em um ponto unico** —
 `seguranca/ControleAcesso.java`:
@@ -243,7 +263,9 @@ com justificativas, esta em [PLAN.md](PLAN.md). Os principais:
 | Admin pode definir o principal de um usuario? | Sim — ele ja edita todo o resto; abrir excecao seria arbitrario |
 | Como nasce o primeiro admin? | Migration de seed, com credenciais documentadas acima |
 | CPF/CEP com ou sem mascara no banco | Sem mascara, com `CHECK` de formato |
-| 403 ou 404 ao pedir recurso de outro usuario | 403 |
+| 403 ou 404 ao pedir recurso de outro usuario | 403 na rota de outro; 404 para id alheio na propria rota |
+| E-mail nao aparece no enunciado, mas o backend exige | Mantido como campo extra. **Nao e exigencia do teste, e escolha minha** — reverter e uma migration |
+| "Pode excluir enderecos" so aparece na lista do Administrador | O usuario comum tambem exclui os proprios. Risco assumido e registrado; reverter e uma linha |
 
 ---
 
@@ -332,13 +354,15 @@ valer juntos.
 
 ## Testes
 
-**130 testes: 89 no backend e 41 no frontend.**
+**131 testes: 90 no backend e 41 no frontend.**
 
-No backend sao 43 unitarios e 46 de integracao contra um Postgres de verdade.
+No backend sao 43 unitarios e 47 de integracao contra um Postgres de verdade.
 
 **Rode `mvn verify`, nao `mvn test`.** O Surefire roda apenas os `*Test`; os
 `*IT` — onde vivem as regras de negocio — sao do Failsafe, na fase `verify`.
-`mvn test` passa sem exercitar nenhuma regra de endereco. Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
+`mvn test` passa sem exercitar nenhuma regra de endereco.
+
+Os unitarios cobrem validacao de CPF, ciclo do JWT (incluindo token
 adulterado e expirado), a regra de isolamento entre usuarios, e a conferencia
 dos hashes do seed contra as senhas documentadas.
 
@@ -348,31 +372,23 @@ em que o Hibernate emite DELETE e UPDATE. Um repositorio simulado concordaria
 com qualquer implementacao, inclusive com a errada.
 
 ```bash
-docker compose up -d db      # integracao precisa do Postgres de pe
-docker run --rm --network testepraticosolution_default \n  -e DB_URL=jdbc:postgresql://db:5432/teste_pratico \n  -e JWT_SECRET=qualquer-segredo-de-teste-com-32-bytes-ou-mais \n  -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn verify
+docker compose up -d db      # a integracao precisa do Postgres de pe
+
+docker run --rm --network testepraticosolution_default -e DB_URL=jdbc:postgresql://db:5432/teste_pratico -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn verify
 ```
 
----
+> No Git Bash do Windows, prefixe com `MSYS_NO_PATHCONV=1` ou rode pelo
+> PowerShell: sem isso o caminho do `-v` e reescrito e o container nao encontra
+> o projeto.
 
-## Stack
-
-| Camada | Escolha |
-|---|---|
-| Linguagem | Java 21 |
-| Framework | Spring Boot 3.5 |
-| Persistencia | Spring Data JPA + Hibernate 6.6 |
-| Migrations | Flyway |
-| Banco | PostgreSQL 16 |
-| Seguranca | Spring Security + JJWT 0.12 |
-| Build | Maven |
-| Frontend | React + Vite + TypeScript (etapa 3) |
-| Infra | Docker Compose |
-
-### Testes do frontend
+**Frontend:**
 
 ```bash
-cd frontend && npm test
+cd frontend && npm install && npm test
 ```
+
+
+### O que os testes do frontend cobrem
 
 41 testes, e a escolha do que testar segue a mesma regra do backend: regra de
 negocio, nao cobertura.
@@ -394,3 +410,19 @@ Esse ultimo arquivo encontrou um defeito real assim que foi escrito: o
 `FormControl` do shadcn e um `Slot` e injeta o `id` no filho direto; como o
 `Input` do CEP estava dentro de uma `div` de posicionamento, o `id` ia para a
 `div` e o `<label for>` apontava para ela. Clicar no rotulo nao focava o campo.
+
+---
+
+## Stack
+
+| Camada | Escolha |
+|---|---|
+| Linguagem | Java 21 |
+| Framework | Spring Boot 3.5 |
+| Persistencia | Spring Data JPA + Hibernate 6.6 |
+| Migrations | Flyway |
+| Banco | PostgreSQL 16 |
+| Seguranca | Spring Security + JJWT 0.12 |
+| Build | Maven |
+| Frontend | React 19 + Vite + TypeScript, Tailwind v4, shadcn/ui, React Query |
+| Infra | Docker Compose |

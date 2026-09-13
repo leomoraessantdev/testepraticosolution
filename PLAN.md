@@ -158,7 +158,7 @@ O documento **não** pede editar nem excluir usuário; a lista da API é exatame
 - [x] Docker para subir o projeto — `docker compose up` sobe **db + api + web**; o frontend tem `Dockerfile` multi-stage e nginx com fallback de SPA
 - [x] Organização do backend em camadas — Controller → Service → Repository, agrupado por feature
 - [x] Tratamento adequado de erros da API — `GlobalExceptionHandler` no backend, formato único `ApiError`; no cliente `lib/erros.ts` traduz status e erros de campo
-- [x] Testes automatizados — **130 no total**: 89 no backend (`mvn verify`) e 41 no frontend (`npm test`), estes cobrindo o algoritmo de CPF com os mesmos vetores do backend, a armadilha de fuso na formatacao de data, a normalizacao de erro da API e o preenchimento automatico pelo CEP
+- [x] Testes automatizados — **131 no total**: 90 no backend (`mvn verify`) e 41 no frontend (`npm test`), estes cobrindo o algoritmo de CPF com os mesmos vetores do backend, a armadilha de fuso na formatacao de data, a normalizacao de erro da API e o preenchimento automatico pelo CEP
 
 ---
 
