@@ -1,6 +1,7 @@
 package com.solution.testepratico.endereco;
 
 import com.solution.testepratico.endereco.dto.AtualizarEnderecoRequest;
+import com.solution.testepratico.endereco.dto.EnderecoAdminResponse;
 import com.solution.testepratico.endereco.dto.CriarEnderecoRequest;
 import com.solution.testepratico.endereco.dto.EnderecoResponse;
 import com.solution.testepratico.seguranca.UsuarioAutenticado;
@@ -22,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -396,5 +398,23 @@ class EnderecoServiceIT {
         assertThat(lista).hasSizeGreaterThanOrEqualTo(3);
         assertThat(lista.get(0).principal()).isTrue();
         assertThat(lista.subList(1, lista.size())).allMatch(e -> !e.principal());
+    }
+
+    @Test
+    @DisplayName("listagem global e ordenada por dono, principal na frente, id como desempate")
+    void listagemGlobalOrdenada() {
+        autenticarComoAdmin();
+
+        var conteudo = enderecoService.listarTodos(PageRequest.of(0, 50)).conteudo();
+
+        // Consulta paginada SEM ordenacao explicita nao tem ordem garantida: o
+        // banco pode devolver as linhas em ordem diferente a cada execucao, e a
+        // mesma linha acaba aparecendo em duas paginas enquanto outra some. O
+        // desempate por id importa tanto quanto o resto - sem ele, linhas do
+        // mesmo dono com o mesmo principal voltam a ficar sem ordem definida.
+        assertThat(conteudo).isSortedAccordingTo(
+                Comparator.comparing(EnderecoAdminResponse::usuarioNome)
+                        .thenComparing(EnderecoAdminResponse::principal, Comparator.reverseOrder())
+                        .thenComparing(EnderecoAdminResponse::id));
     }
 }

@@ -43,8 +43,17 @@ public interface EnderecoRepository extends JpaRepository<Endereco, Long> {
      * Paginar com JOIN FETCH e seguro aqui porque a associacao e ManyToOne e
      * nao multiplica linhas. Com colecao (OneToMany) o Hibernate teria de
      * paginar em memoria.
+     *
+     * O ORDER BY nao e cosmetico. Consulta paginada SEM ordenacao explicita nao
+     * tem ordem garantida: o Postgres pode devolver as linhas em ordem
+     * diferente a cada execucao, e entao a mesma linha aparece em duas paginas
+     * enquanto outra nunca aparece. O criterio agrupa por dono e poe o
+     * principal na frente, e termina em e.id, que e unico - sem esse desempate
+     * final, linhas do mesmo usuario com o mesmo valor de principal voltariam a
+     * ficar sem ordem definida.
      */
-    @Query(value = "SELECT e FROM Endereco e JOIN FETCH e.usuario",
+    @Query(value = "SELECT e FROM Endereco e JOIN FETCH e.usuario u "
+                 + "ORDER BY u.nome ASC, e.principal DESC, e.id ASC",
            countQuery = "SELECT count(e) FROM Endereco e")
     Page<Endereco> buscarTodosComUsuario(Pageable pageable);
 

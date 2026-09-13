@@ -1,6 +1,7 @@
 import { LogOut, MapPin, User, Users } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/auth/auth-context'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -64,10 +65,13 @@ export function Layout() {
           </nav>
 
           <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
-            <span className="truncate text-sm text-muted-foreground">
-              {sessao?.nome}
-              {ehAdmin && ' · admin'}
-            </span>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm text-muted-foreground">{sessao?.nome}</span>
+              {/* Badge em vez de texto solto: o perfil e a mesma informacao que a
+                  listagem de usuarios ja mostra assim, e com o admin chamado
+                  "Administrador" o texto ficava repetido ("Administrador - admin"). */}
+              {ehAdmin && <Badge variant="secondary">Admin</Badge>}
+            </div>
             <Button variant="ghost" size="sm" onClick={sair}>
               <LogOut className="size-4" aria-hidden />
               Sair
