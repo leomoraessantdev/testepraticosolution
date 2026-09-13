@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -184,8 +185,18 @@ class EnderecoServiceIT {
         Long idPrincipalOriginal = enderecoRepository.findByUsuarioIdAndPrincipalTrue(ana.getId())
                 .orElseThrow().getId();
 
-        EnderecoResponse segundo = enderecoService.criar(ana.getId(), pedido("04538133", "200", false));
-        EnderecoResponse terceiro = enderecoService.criar(ana.getId(), pedido("01001000", "300", false));
+        enderecoService.criar(ana.getId(), pedido("04538133", "200", false));
+        EnderecoResponse maisRecente = enderecoService.criar(ana.getId(), pedido("01001000", "300", false));
+
+        // Calcula o sucessor esperado em vez de fixar um id: a Ana ja tem mais de
+        // um endereco no seed (V3 e V5), entao o mais antigo restante nao e
+        // necessariamente o primeiro que este teste cria.
+        Long sucessorEsperado = enderecoRepository
+                .findByUsuarioIdOrderByPrincipalDescIdAsc(ana.getId()).stream()
+                .map(Endereco::getId)
+                .filter(id -> !id.equals(idPrincipalOriginal))
+                .min(Long::compareTo)
+                .orElseThrow();
 
         enderecoService.excluir(ana.getId(), idPrincipalOriginal);
 
@@ -195,8 +206,8 @@ class EnderecoServiceIT {
         // O sucessor e o mais antigo restante, nao o mais recente.
         Endereco novoPrincipal = enderecoRepository
                 .findByUsuarioIdAndPrincipalTrue(ana.getId()).orElseThrow();
-        assertThat(novoPrincipal.getId()).isEqualTo(segundo.id());
-        assertThat(novoPrincipal.getId()).isNotEqualTo(terceiro.id());
+        assertThat(novoPrincipal.getId()).isEqualTo(sucessorEsperado);
+        assertThat(novoPrincipal.getId()).isNotEqualTo(maisRecente.id());
     }
 
     @Test
@@ -223,13 +234,19 @@ class EnderecoServiceIT {
     @DisplayName("PLAN.md: o primeiro endereco de um usuario vira principal automaticamente")
     void primeiroEnderecoViraPrincipal() {
         autenticarComoAdmin();
-        Long idAdmin = admin().getId();
 
-        // O admin do seed nao tem endereco nenhum.
-        assertThat(enderecoRepository.existsByUsuarioId(idAdmin)).isFalse();
+        // Usuario criado aqui, e nao o admin do seed: desde a migration V5 os tres
+        // usuarios do seed ja nascem com dois enderecos, entao nenhum deles serve
+        // para testar o PRIMEIRO endereco de alguem.
+        Usuario semEndereco = usuarioRepository.save(new Usuario(
+                "Sem Endereco", "12345678909", "sem.endereco@exemplo.com",
+                LocalDate.of(1990, 1, 1), "$2b$10$hashQualquer", Role.USUARIO_COMUM));
+
+        assertThat(enderecoRepository.existsByUsuarioId(semEndereco.getId())).isFalse();
 
         // Pedido explicitamente com principal=false.
-        EnderecoResponse primeiro = enderecoService.criar(idAdmin, pedido("01310100", "1", false));
+        EnderecoResponse primeiro = enderecoService.criar(
+                semEndereco.getId(), pedido("01310100", "1", false));
 
         assertThat(primeiro.principal())
                 .as("primeiro endereco deve ser principal mesmo com principal=false no pedido")

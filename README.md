@@ -48,13 +48,18 @@ docker compose down -v && docker compose up --build
 
 ### Credenciais iniciais
 
-Criadas pela migration `V3__seed_usuarios.sql`. **Login e por CPF.**
+Criadas pelas migrations `V3__seed_usuarios.sql` e `V5__seed_segundo_endereco.sql`.
+**Login e por CPF.**
+
+Os tres usuarios do seed tem **dois enderecos cada, exatamente um principal** —
+o suficiente para exercitar as tres regras do endereco principal sem cadastrar
+nada a mao.
 
 | Perfil | CPF | Senha | Observacao |
 |---|---|---|---|
-| ADMIN | `52998224725` | `admin123` | administrador inicial |
-| USUARIO_COMUM | `11144477735` | `usuario123` | Ana, com 1 endereco |
-| USUARIO_COMUM | `39053344705` | `usuario123` | Bruno, com 1 endereco |
+| ADMIN | `52998224725` | `admin123` | administrador inicial, 2 enderecos |
+| USUARIO_COMUM | `11144477735` | `usuario123` | Ana Souza, 2 enderecos |
+| USUARIO_COMUM | `39053344705` | `usuario123` | Bruno Lima, 2 enderecos |
 
 Ana e Bruno existem para demonstrar o isolamento entre usuarios: autenticado
 como Ana, tente ler os dados de Bruno e a API responde 403.
