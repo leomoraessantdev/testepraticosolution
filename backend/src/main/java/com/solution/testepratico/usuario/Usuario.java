@@ -58,6 +58,18 @@ public class Usuario {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
+    /*
+     * Sem setters, de proposito.
+     *
+     * O documento nao pede edicao de usuario - a lista de operacoes da API e
+     * criar, listar e buscar. Entao nenhum campo muda depois da construcao, e
+     * expor setter que ninguem chama e convite a mutacao acidental.
+     *
+     * A JPA nao precisa deles: o mapeamento e por campo (a anotacao @Id esta no
+     * campo, nao no getter), entao o Hibernate hidrata por reflexao direta.
+     * Endereco, esse sim, tem setters - porque a API permite atualizar endereco.
+     */
+
     /** Exigido pela JPA. Nao usar no codigo da aplicacao. */
     protected Usuario() {
     }
@@ -79,40 +91,20 @@ public class Usuario {
         return nome;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
     public String getCpf() {
         return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
     }
 
     public String getSenhaHash() {
         return senhaHash;
     }
 
-    public void setSenhaHash(String senhaHash) {
-        this.senhaHash = senhaHash;
-    }
-
     public Role getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
     public LocalDate getDataNascimento() {
         return dataNascimento;
-    }
-
-    public void setDataNascimento(LocalDate dataNascimento) {
-        this.dataNascimento = dataNascimento;
     }
 
     public boolean isAdmin() {
@@ -121,10 +113,6 @@ public class Usuario {
 
     public boolean isAtivo() {
         return ativo;
-    }
-
-    public void setAtivo(boolean ativo) {
-        this.ativo = ativo;
     }
 
     public Instant getCriadoEm() {

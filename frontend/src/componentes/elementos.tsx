@@ -10,7 +10,7 @@ import type { Role } from '@/tipos'
  */
 
 /** "Ana Souza" -> "AS". Uma letra so quando o nome tem uma palavra. */
-export function iniciais(nome: string): string {
+function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter(Boolean)
   if (partes.length === 0) return '?'
   if (partes.length === 1) return partes[0].slice(0, 1).toUpperCase()
