@@ -1,5 +1,7 @@
 # Cadastro de Usuarios e Enderecos
 
+[![CI](https://github.com/leomoraessantdev/testepraticosolution/actions/workflows/ci.yml/badge.svg)](https://github.com/leomoraessantdev/testepraticosolution/actions/workflows/ci.yml)
+
 Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
@@ -10,6 +12,24 @@ React + Vite + TypeScript.
 > O checklist item por item, com citacao literal do documento, esta em
 > [PLAN.md](PLAN.md), junto das ambiguidades encontradas e da decisao tomada em
 > cada uma.
+
+---
+
+## Por onde comecar
+
+Se o tempo for curto, estes sao os pontos em que o codigo diz mais sobre as
+decisoes do que sobre o CRUD:
+
+| Onde | O que ver |
+|---|---|
+| `V2__create_enderecos.sql` | O indice unico **parcial** que garante "um principal por usuario". Um `UNIQUE (usuario_id, principal)` comum estaria errado: limitaria tambem a 1 os nao-principais |
+| `EnderecoService.excluir()` | O `flush()` explicito. O DELETE precisa chegar ao banco antes do UPDATE do sucessor, senao o Hibernate ordena os comandos por tipo, existem dois principais no mesmo instante e o indice aborta a transacao |
+| `ControleAcesso.exigirAcessoAoUsuario()` | O isolamento entre usuarios num ponto unico. `idAlvo` vem da URL, `atual.id()` vem do token assinado — o cliente controla o primeiro, nao o segundo |
+| `AuthService.autenticar()` | A senha e comparada mesmo quando o CPF nao existe, contra um hash descartavel de mesmo custo. Sem isso, a diferenca de tempo revelaria quais CPFs estao cadastrados |
+| `CepService` + `frontend/src/api/cep.ts` | O cache em duas camadas: o `@Cacheable` poupa a chamada ao ViaCEP, o `fetchQuery` poupa ate a chamada ao nosso backend |
+| `ContratoHttpIT` | Os status HTTP de cada regra. Os outros testes provam que a excecao e lancada; so este prova que ela virou **403** na resposta |
+| `EnderecoRepository.contarPorUsuario()` | A contagem por `GROUP BY`. A forma ingenua seria um N+1: 3 usuarios viram 4 consultas, 500 viram 501 |
+| [PLAN.md](PLAN.md) | Cada requisito com **citacao literal** do enunciado, e as 20 ambiguidades encontradas com a decisao tomada em cada uma |
 
 ---
 

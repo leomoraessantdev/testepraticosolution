@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (91 testes)
+    runs-on: ubuntu-latest
+
+    services:
+      # Os testes de integracao precisam de um Postgres de verdade: as regras do
+      # endereco principal nao podem ser provadas com mock - uma e constraint do
+      # banco, outra depende da ordem de flush do Hibernate.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: teste_pratico
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      # mvn verify, e nao mvn test: o Surefire roda so os *Test. Os *IT, onde
+      # vivem as regras de negocio, sao do Failsafe na fase verify.
+      #
+      # JWT_SECRET nao e passado aqui de proposito: o perfil de teste
+      # (application-test.yml) fornece o segredo. Se esta variavel fizesse falta,
+      # seria sinal de que algum teste esqueceu o @ActiveProfiles("test").
+      - name: mvn verify
+        working-directory: backend
+        run: ./mvnw -B verify
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/teste_pratico
+
+  frontend:
+    name: Frontend (41 testes)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci, e nao npm install: instala exatamente o que esta no lock e falha
+      # se o package.json divergir dele.
+      - name: npm ci
+        working-directory: frontend
+        run: npm ci
+
+      - name: lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: testes
+        working-directory: frontend
+        run: npm test
+
+      # O build tambem roda tsc -b, entao um erro de tipo quebra aqui.
+      - name: build
+        working-directory: frontend
+        run: npm run build
