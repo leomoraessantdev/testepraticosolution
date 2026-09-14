@@ -44,11 +44,11 @@ docker compose up --build
 
 Sobem tres servicos:
 
-| Servico | URL | Container |
+| Servico | Onde abre | O que e |
 |---|---|---|
-| Frontend | http://localhost:5173 | `teste-web` (nginx) |
-| API | http://localhost:8080 | `teste-api` |
-| Postgres | localhost:5432 | `teste-db` |
+| **Frontend** | **http://localhost:5173** | React, servido por nginx |
+| API | http://localhost:8080 | Spring Boot |
+| Postgres | localhost:5432 | banco, com o seed ja aplicado |
 
 Abra **http://localhost:5173** e entre com uma das credenciais abaixo.
 
@@ -65,6 +65,17 @@ Para recomecar do zero, apagando o volume do banco:
 ```bash
 docker compose down -v && docker compose up --build
 ```
+
+### Se algo der errado
+
+| Sintoma | Causa e solucao |
+|---|---|
+| `port is already allocated` | Alguma das portas 5173, 8080 ou 5432 ja esta em uso. Mude no `.env`: `WEB_PORT`, `API_PORT` ou `DB_PORT`. Se mudar a do frontend, ajuste `CORS_ORIGENS` junto — o backend so aceita a origem que estiver la |
+| `defina JWT_SECRET` | O `.env` nao foi criado. Rode `cp .env.example .env` |
+| Frontend abre mas nao carrega dados | A API ainda esta subindo. O `web` espera o healthcheck dela, mas o navegador pode ter sido aberto antes — atualize a pagina |
+| Quer comecar do zero | `docker compose down -v && docker compose up --build` apaga o volume e reaplica as migrations |
+
+---
 
 ### Credenciais iniciais
 
@@ -461,7 +472,7 @@ com qualquer implementacao, inclusive com a errada.
 ```bash
 docker compose up -d db      # a integracao precisa do Postgres de pe
 
-docker run --rm --network testepraticosolution_default -e DB_URL=jdbc:postgresql://db:5432/teste_pratico -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn verify
+docker run --rm --network testepratico_default -e DB_URL=jdbc:postgresql://db:5432/teste_pratico -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-21 mvn verify
 ```
 
 > No Git Bash do Windows, prefixe com `MSYS_NO_PATHCONV=1` ou rode pelo

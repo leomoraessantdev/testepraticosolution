@@ -1,7 +1,16 @@
+# Nome do projeto fixo, em vez de herdar o nome da pasta.
+#
+# Sem isto, quem clonar em um diretorio com outro nome teria uma rede chamada
+# de outro jeito, e o comando de testes documentado no README - que passa
+# --network - deixaria de funcionar na maquina dessa pessoa.
+name: testepratico
 services:
+  # Sem container_name fixo de proposito. Nome fixo impede rodar duas copias
+  # do projeto lado a lado e colide com qualquer container homonimo que ja
+  # exista na maquina - cenario real para quem avalia varios testes tecnicos.
+  # O Compose nomeia sozinho como testepratico-db-1, ja isolado pelo projeto.
   db:
     image: postgres:16-alpine
-    container_name: teste-db
     environment:
       POSTGRES_DB: ${DB_NAME:-teste_pratico}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -20,7 +29,6 @@ services:
 
   api:
     build: ./backend
-    container_name: teste-api
     # service_healthy, nao apenas service_started: o compose so sobe a API
     # depois que o healthcheck acima passar.
     depends_on:
@@ -55,7 +63,6 @@ services:
         # NAVEGADOR usa, nao a rede interna do compose: o JavaScript roda na
         # maquina de quem abre a pagina, entao "http://api:8080" nao resolveria.
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
-    container_name: teste-web
     depends_on:
       api:
         condition: service_healthy
