@@ -194,7 +194,12 @@ export function EnderecoFormDialog({ usuarioId, endereco, aberto, onFechar }: Pr
               </Alert>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* items-start: sem isso o grid estica a coluna mais curta ate a
+                altura da mais alta, e essa sobra se redistribui dentro das
+                linhas internas da coluna (rotulo/caixa descolam). Como CEP
+                ganha uma linha a mais (dica ou erro) e o Numero nao, as duas
+                colunas ficam com alturas diferentes o tempo todo. */}
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="cep"

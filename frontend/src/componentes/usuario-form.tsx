@@ -2,7 +2,6 @@ import type { UseFormReturn } from 'react-hook-form'
 import { z } from 'zod'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -122,11 +121,6 @@ export function CamposUsuario({ form }: { form: UseFormReturn<FormularioUsuario>
           </FormItem>
         )}
       />
-
-      <FormDescription className="text-xs">
-        As validações desta tela servem para agilizar a correção de erros de digitação. O
-        servidor valida tudo novamente.
-      </FormDescription>
     </>
   )
 }
