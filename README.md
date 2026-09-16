@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leomoraessantdev/testepraticosolution/actions/workflows/ci.yml/badge.svg)](https://github.com/leomoraessantdev/testepraticosolution/actions/workflows/ci.yml)
 
-Teste tecnico. API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
+Teste tecnico — API REST em Java 21 + Spring Boot com PostgreSQL, e frontend em
 React + Vite + TypeScript.
 
 > **Status:** backend e frontend implementados e verificados contra o
